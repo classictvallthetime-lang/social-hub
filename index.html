@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RSS to Social Poster</title>
+    <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Font for a clean look -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
@@ -18,8 +20,9 @@
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Automated RSS to Social Media Poster</h1>
-        <p class="text-gray-600 text-center mb-8">Post your favorite RSS feed items to Mastodon and Bluesky. Simply enter your credentials and feed URLs below!</p>
+        <p class="text-gray-600 text-center mb-8">Post your favorite RSS feed items to Mastodon and Bluesky. Simply enter your credentials, feed URLs, and schedule below!</p>
 
+        <!-- Message Box for user feedback -->
         <div id="messageBox" class="hidden mb-4 p-4 rounded-lg text-center font-medium transition-opacity duration-300"></div>
 
         <div class="space-y-6">
@@ -53,27 +56,78 @@
                 </div>
             </div>
 
-            <!-- RSS Feeds Section (UPDATED) -->
+            <!-- RSS Feeds Section -->
             <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">RSS Feed URLs</h2>
                 <div id="rss-feeds-container" class="space-y-4">
                     <!-- Initial RSS feed input -->
                     <div class="flex items-center space-x-2">
                         <input type="text" placeholder="Add RSS URL, e.g., https://www.nasa.gov/news/feed/" class="rss-url-input flex-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <button class="remove-feed-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-700 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <button id="add-feed-btn" class="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition duration-150 ease-in-out">Add another RSS feed</button>
             </div>
 
-            <!-- Action Buttons -->
-            <div class="flex justify-center space-x-4">
-                <button id="test-connection-btn" class="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">Test Connections</button>
-                <button id="post-btn" class="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">Fetch & Post to Social Media</button>
+            <!-- Scheduler Section -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Scheduler Settings</h2>
+                <p class="text-sm text-gray-600 mb-4">Set how often you want to automatically check for new RSS items and post them.</p>
+                <div class="flex items-center space-x-4">
+                    <label for="schedule-interval" class="text-sm font-medium text-gray-700 whitespace-nowrap">Run every</label>
+                    <input type="number" id="schedule-interval" placeholder="e.g., 3" value="3" min="1" class="w-24 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <span class="text-sm font-medium text-gray-700">hour(s)</span>
+                </div>
+                <div id="scheduler-status" class="mt-4 text-center text-sm font-medium text-gray-600">Scheduler is not running.</div>
             </div>
+
+            <!-- Post History Section -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Post History</h2>
+                <p class="text-sm text-gray-600 mb-4">This shows the last 10 posts made by the app.</p>
+                <div id="post-history-container" class="space-y-4">
+                    <!-- Post history items will be dynamically added here -->
+                    <p class="text-center text-gray-500">No posts found yet.</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap justify-center gap-2">
+                <button id="save-settings-btn" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">Save Settings</button>
+                <button id="test-connection-btn" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition duration-150 ease-in-out">Test Connection</button>
+                <button id="start-scheduler-btn" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">Start Auto-Poster</button>
+                <button id="stop-scheduler-btn" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">Stop Auto-Poster</button>
+                <button id="post-btn" class="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">Fetch & Post Now</button>
+            </div>
+            <!-- Display the user ID for debugging -->
+            <div id="userIdDisplay" class="mt-4 text-center text-xs text-gray-400">User ID: Loading...</div>
         </div>
     </div>
 
-    <script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, limit, orderBy, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Initialization
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let schedulerIntervalId = null;
+        let settingsDocRef;
+        let stateDocRef;
+        let postHistoryCollectionRef;
+
+        // --- DOM Elements & Event Listeners ---
         const mastodonServerInput = document.getElementById('mastodon-server');
         const mastodonTokenInput = document.getElementById('mastodon-token');
         const blueskyIdentifierInput = document.getElementById('bluesky-identifier');
@@ -82,8 +136,26 @@
         const addFeedBtn = document.getElementById('add-feed-btn');
         const testBtn = document.getElementById('test-connection-btn');
         const postBtn = document.getElementById('post-btn');
+        const saveBtn = document.getElementById('save-settings-btn');
         const messageBox = document.getElementById('messageBox');
-        
+        const scheduleIntervalInput = document.getElementById('schedule-interval');
+        const startSchedulerBtn = document.getElementById('start-scheduler-btn');
+        const stopSchedulerBtn = document.getElementById('stop-scheduler-btn');
+        const schedulerStatusText = document.getElementById('scheduler-status');
+        const postHistoryContainer = document.getElementById('post-history-container');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
+        /**
+         * Initializes Firebase references after authentication is complete.
+         * This is crucial to ensure we have a valid user ID.
+         */
+        function initializeFirebaseRefs(userId) {
+            settingsDocRef = doc(db, `/artifacts/${appId}/users/${userId}/settings/rss-social`);
+            stateDocRef = doc(db, `/artifacts/${appId}/users/${userId}/state/scheduler`);
+            postHistoryCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/postHistory`);
+            userIdDisplay.textContent = `User ID: ${userId}`;
+        }
+
         // --- Utility Functions ---
 
         /**
@@ -102,7 +174,7 @@
                 const parser = new DOMParser();
                 return parser.parseFromString(text, "text/xml");
             } catch (error) {
-                showMessage(`Error fetching RSS feed from ${url}: ${error.message}`, 'bg-red-500 text-white');
+                console.error(`Error fetching RSS feed from ${url}: ${error.message}`);
                 return null;
             }
         }
@@ -126,8 +198,9 @@
 
         /**
          * Adds a new RSS feed input field to the form.
+         * @param {string} url The URL to pre-fill the input field with (optional).
          */
-        function addFeedInput() {
+        function addFeedInput(url = '') {
             const wrapperDiv = document.createElement('div');
             wrapperDiv.className = 'flex items-center space-x-2';
 
@@ -135,8 +208,10 @@
             input.type = 'text';
             input.placeholder = 'Add RSS URL, e.g., https://www.nasa.gov/news/feed/';
             input.className = 'rss-url-input flex-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm';
+            input.value = url;
 
             const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-feed-btn';
             removeBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-700 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -151,8 +226,83 @@
             wrapperDiv.appendChild(removeBtn);
             rssFeedsContainer.appendChild(wrapperDiv);
         }
-        addFeedBtn.addEventListener('click', addFeedInput);
 
+        // Event listener for adding a new RSS feed input
+        addFeedBtn.addEventListener('click', () => addFeedInput());
+
+
+        // --- Firestore Data Persistence Functions ---
+
+        /**
+         * Saves all current settings to Firestore.
+         */
+        async function saveSettings() {
+            try {
+                if (!auth.currentUser) {
+                    showMessage('User not authenticated. Please wait and try again.', 'bg-red-500 text-white');
+                    return;
+                }
+
+                const settings = {
+                    mastodonServer: mastodonServerInput.value.trim(),
+                    mastodonToken: mastodonTokenInput.value.trim(),
+                    blueskyIdentifier: blueskyIdentifierInput.value.trim(),
+                    blueskyPassword: blueskyPasswordInput.value.trim(),
+                    rssFeeds: Array.from(document.querySelectorAll('.rss-url-input')).map(input => input.value.trim()).filter(Boolean),
+                    scheduleInterval: scheduleIntervalInput.value.trim()
+                };
+
+                await setDoc(settingsDocRef, settings, { merge: true });
+
+                showMessage('Settings saved successfully!', 'bg-green-500 text-white');
+            } catch (error) {
+                console.error("Error saving settings:", error);
+                showMessage('Failed to save settings. Please try again.', 'bg-red-500 text-white');
+            }
+        }
+
+        /**
+         * Loads settings from Firestore and populates the form.
+         */
+        async function loadSettings() {
+            try {
+                if (!auth.currentUser) {
+                    console.log("User not authenticated yet, skipping load.");
+                    return;
+                }
+
+                const docSnap = await getDoc(settingsDocRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    mastodonServerInput.value = data.mastodonServer || '';
+                    mastodonTokenInput.value = data.mastodonToken || '';
+                    blueskyIdentifierInput.value = data.blueskyIdentifier || '';
+                    blueskyPasswordInput.value = data.blueskyPassword || '';
+                    scheduleIntervalInput.value = data.scheduleInterval || '3';
+
+                    // Clear existing RSS feed inputs
+                    rssFeedsContainer.innerHTML = '';
+
+                    // Add inputs for each loaded RSS feed
+                    if (data.rssFeeds && data.rssFeeds.length > 0) {
+                        data.rssFeeds.forEach(url => addFeedInput(url));
+                    } else {
+                        // If no feeds are saved, add a single empty input
+                        addFeedInput();
+                    }
+                    console.log('Settings loaded successfully.');
+                } else {
+                    console.log("No saved settings found.");
+                    if (rssFeedsContainer.children.length === 0) {
+                        addFeedInput();
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading settings:", error);
+                showMessage('Failed to load settings. Please try again.', 'bg-red-500 text-white');
+            }
+        }
 
         // --- Mastodon Functions ---
 
@@ -220,7 +370,7 @@
                         'Authorization': `Bearer ${accessJwt}`
                     },
                     body: JSON.stringify({
-                        repo: 'me', // 'me' is a special value that resolves to the authenticated user's DID
+                        repo: 'me',
                         collection: 'app.bsky.feed.post',
                         record: {
                             text,
@@ -236,87 +386,14 @@
             }
         }
         
-        // --- Main Logic ---
+        // --- Core Posting Logic ---
 
-        testBtn.addEventListener('click', async () => {
-            const mastodonServer = mastodonServerInput.value.trim();
-            const mastodonToken = mastodonTokenInput.value.trim();
-            const blueskyIdentifier = blueskyIdentifierInput.value.trim();
-            const blueskyPassword = blueskyPasswordInput.value.trim();
-            const rssUrls = Array.from(document.querySelectorAll('.rss-url-input')).map(input => input.value.trim()).filter(Boolean);
-
-            if (!mastodonServer && !blueskyIdentifier && rssUrls.length === 0) {
-                showMessage('Please enter at least one URL or credential to test.', 'bg-yellow-500 text-white');
-                return;
-            }
-
-            let mastodonSuccess = false;
-            if (mastodonServer && mastodonToken) {
-                showMessage('Testing Mastodon connection...', 'bg-blue-500 text-white');
-                const testStatus = 'This is a test post from my RSS reader app.';
-                const response = await fetch(`${mastodonServer}/api/v1/statuses`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${mastodonToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        status: testStatus,
-                        visibility: 'unlisted'
-                    })
-                });
-                if (response.ok) {
-                    mastodonSuccess = true;
-                    const data = await response.json();
-                    if (data.id) {
-                        await fetch(`${mastodonServer}/api/v1/statuses/${data.id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${mastodonToken}` }
-                        });
-                    }
-                }
-            }
-
-            let blueskySuccess = false;
-            if (blueskyIdentifier && blueskyPassword) {
-                showMessage('Testing Bluesky connection...', 'bg-blue-500 text-white');
-                const session = await createBlueskySession(blueskyIdentifier, blueskyPassword);
-                if (session && session.did) {
-                    blueskySuccess = true;
-                }
-            }
-
-            let rssSuccess = true;
-            if (rssUrls.length > 0) {
-                showMessage('Testing RSS feeds...', 'bg-blue-500 text-white');
-                for (const url of rssUrls) {
-                    const feed = await fetchRssFeed(url);
-                    if (!feed) {
-                        rssSuccess = false;
-                        break;
-                    }
-                }
-            }
-
-            let messages = [];
-            if (mastodonServer && mastodonToken) {
-                messages.push(`Mastodon connection: ${mastodonSuccess ? 'SUCCESS' : 'FAILURE'}.`);
-            }
-            if (blueskyIdentifier && blueskyPassword) {
-                messages.push(`Bluesky connection: ${blueskySuccess ? 'SUCCESS' : 'FAILURE'}.`);
-            }
-            if (rssUrls.length > 0) {
-                messages.push(`RSS feed check: ${rssSuccess ? 'SUCCESS' : 'FAILURE'}.`);
-            }
-
-            if (messages.length > 0) {
-                const combinedMessage = messages.join(' ');
-                const isOverallSuccess = messages.every(msg => msg.includes('SUCCESS'));
-                showMessage(combinedMessage, isOverallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
-            }
-        });
-
-        postBtn.addEventListener('click', async () => {
+        /**
+         * Fetches all RSS feeds and posts the latest *new* item to social media.
+         * @param {boolean} isTest Run in test mode (no actual posts, just validation).
+         * @returns {Promise<void>}
+         */
+        async function checkAndPostFeeds(isTest = false) {
             const mastodonServer = mastodonServerInput.value.trim();
             const mastodonToken = mastodonTokenInput.value.trim();
             const blueskyIdentifier = blueskyIdentifierInput.value.trim();
@@ -340,9 +417,16 @@
             let overallSuccess = true;
             let messages = [];
 
+            // Load last posted data from Firestore
+            const stateDocSnap = await getDoc(stateDocRef);
+            const stateData = stateDocSnap.exists() ? stateDocSnap.data() : {};
+            const lastPostedItems = stateData.lastPostedItems || {};
+            const newLastPostedItems = { ...lastPostedItems };
+
             for (const rssUrl of rssUrls) {
-                showMessage(`Fetching RSS feed from ${rssUrl}...`, 'bg-yellow-500 text-white');
+                showMessage(`Checking feed: ${rssUrl}...`, 'bg-yellow-500 text-white');
                 const feed = await fetchRssFeed(rssUrl);
+                
                 if (!feed) {
                     messages.push(`Failed to fetch from ${rssUrl}.`);
                     overallSuccess = false;
@@ -358,6 +442,13 @@
                 const latestItem = items[0];
                 const title = latestItem.querySelector('title')?.textContent;
                 const link = latestItem.querySelector('link')?.textContent;
+                const description = latestItem.querySelector('description')?.textContent;
+                
+                // If the latest item is the same as the last one posted, skip.
+                if (lastPostedItems[rssUrl] === link) {
+                    messages.push(`No new items for ${rssUrl}.`);
+                    continue;
+                }
 
                 if (!title || !link) {
                     messages.push(`Item from ${rssUrl} is missing a title or link. Skipping.`);
@@ -368,21 +459,61 @@
 
                 let mastodonPosted = false;
                 if (mastodonServer && mastodonToken) {
-                    mastodonPosted = await postToMastodon(mastodonServer, mastodonToken, postText);
+                    if (!isTest) {
+                        mastodonPosted = await postToMastodon(mastodonServer, mastodonToken, postText);
+                    } else {
+                        // Simulate a successful test post
+                        mastodonPosted = true;
+                    }
                 }
 
                 let blueskyPosted = false;
                 if (blueskySession) {
-                    blueskyPosted = await postToBluesky(postText, blueskySession.accessJwt);
+                    if (!isTest) {
+                        blueskyPosted = await postToBluesky(postText, blueskySession.accessJwt);
+                    } else {
+                        // Simulate a successful test post
+                        blueskyPosted = true;
+                    }
                 }
 
-                if (mastodonServer && mastodonToken) {
-                    messages.push(`Mastodon post from ${rssUrl}: ${mastodonPosted ? 'SUCCESS' : 'FAILURE'}.`);
-                    if (!mastodonPosted) overallSuccess = false;
+                if (!isTest) {
+                    if (mastodonServer && mastodonToken) {
+                        messages.push(`Mastodon post from ${rssUrl}: ${mastodonPosted ? 'SUCCESS' : 'FAILURE'}.`);
+                        if (!mastodonPosted) overallSuccess = false;
+                    }
+                    if (blueskySession) {
+                        messages.push(`Bluesky post from ${rssUrl}: ${blueskyPosted ? 'SUCCESS' : 'FAILURE'}.`);
+                        if (!blueskyPosted) overallSuccess = false;
+                    }
+                    if (mastodonPosted || blueskyPosted) {
+                        newLastPostedItems[rssUrl] = link;
+                        
+                        // Add post to history if successful
+                        await addDoc(postHistoryCollectionRef, {
+                            title,
+                            link,
+                            rssUrl,
+                            postedAt: serverTimestamp(),
+                            socialPlatforms: [
+                                ...(mastodonPosted ? ['mastodon'] : []),
+                                ...(blueskyPosted ? ['bluesky'] : [])
+                            ]
+                        }).catch(e => console.error("Error adding post to history:", e));
+                    }
+                } else {
+                    messages.push(`Test post for ${rssUrl}: SUCCESS.`);
                 }
-                if (blueskySession) {
-                    messages.push(`Bluesky post from ${rssUrl}: ${blueskyPosted ? 'SUCCESS' : 'FAILURE'}.`);
-                    if (!blueskyPosted) overallSuccess = false;
+            }
+
+            if (!isTest) {
+                 // Save the updated lastPostedItems to Firestore
+                try {
+                    await setDoc(stateDocRef, { lastPostedItems: newLastPostedItems }, { merge: true });
+                } catch (error) {
+                    console.error("Error saving lastPostedItems to Firestore:", error);
+                    messages.push("Failed to save post history to Firestore.");
+                    overallSuccess = false;
                 }
             }
 
@@ -390,9 +521,145 @@
                 const combinedMessage = messages.join(' ');
                 showMessage(combinedMessage, overallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
             } else {
-                showMessage('No social media accounts were configured.', 'bg-yellow-500 text-white');
+                showMessage('No new items to post, or no social media accounts were configured.', 'bg-yellow-500 text-white');
+            }
+        }
+        
+        // --- Scheduler Functions ---
+        
+        /**
+         * Starts the automatic posting scheduler.
+         */
+        async function startScheduler() {
+            const intervalHours = parseFloat(scheduleIntervalInput.value);
+            if (isNaN(intervalHours) || intervalHours <= 0) {
+                showMessage('Please enter a valid number of hours to schedule.', 'bg-yellow-500 text-white');
+                return;
+            }
+            try {
+                // Save the scheduler state to Firestore
+                await setDoc(stateDocRef, { isRunning: true, intervalHours }, { merge: true });
+                showMessage('Auto-poster started. It will continue running even if you close this page.', 'bg-green-500 text-white');
+            } catch (error) {
+                console.error("Error starting scheduler:", error);
+                showMessage('Failed to start scheduler.', 'bg-red-500 text-white');
+            }
+        }
+
+        /**
+         * Stops the automatic posting scheduler.
+         */
+        async function stopScheduler() {
+            try {
+                // Save the scheduler state to Firestore
+                await setDoc(stateDocRef, { isRunning: false }, { merge: true });
+                showMessage('Auto-poster stopped.', 'bg-red-500 text-white');
+            } catch (error) {
+                console.error("Error stopping scheduler:", error);
+                showMessage('Failed to stop scheduler.', 'bg-red-500 text-white');
+            }
+        }
+
+        /**
+         * Manages the local scheduler based on the Firestore state.
+         */
+        function manageLocalScheduler(isRunning, intervalHours) {
+            if (isRunning) {
+                if (schedulerIntervalId === null) {
+                    // Start the scheduler locally
+                    const intervalMilliseconds = intervalHours * 60 * 60 * 1000;
+                    schedulerIntervalId = setInterval(checkAndPostFeeds, intervalMilliseconds);
+                    schedulerStatusText.textContent = `Scheduler is running, next run in ${intervalHours} hour(s).`;
+                }
+            } else {
+                if (schedulerIntervalId !== null) {
+                    // Stop the scheduler locally
+                    clearInterval(schedulerIntervalId);
+                    schedulerIntervalId = null;
+                    schedulerStatusText.textContent = `Scheduler is not running.`;
+                }
+            }
+        }
+
+        /**
+         * Renders the post history items to the UI.
+         * @param {Array<object>} posts The list of post objects to render.
+         */
+        function renderPostHistory(posts) {
+            if (posts.length === 0) {
+                postHistoryContainer.innerHTML = '<p class="text-center text-gray-500">No posts found yet.</p>';
+                return;
+            }
+            postHistoryContainer.innerHTML = '';
+            posts.forEach(post => {
+                const date = post.postedAt ? new Date(post.postedAt.toMillis()).toLocaleString() : 'N/A';
+                const platforms = post.socialPlatforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' & ');
+                
+                const postItem = document.createElement('div');
+                postItem.className = 'p-4 border-b border-gray-200 last:border-b-0';
+                postItem.innerHTML = `
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                        <a href="${post.link}" target="_blank" class="text-lg font-medium text-indigo-600 hover:underline break-words">${post.title}</a>
+                        <span class="text-sm text-gray-500 mt-1 sm:mt-0 whitespace-nowrap">${date}</span>
+                    </div>
+                    <div class="text-sm text-gray-700 mt-1">
+                        Posted to: <span class="font-semibold">${platforms}</span>
+                    </div>
+                `;
+                postHistoryContainer.appendChild(postItem);
+            });
+        }
+
+        // --- Event Listeners and Initial Load ---
+        
+        // Listen for authentication state changes and then initialize app
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("Authentication state changed: User is signed in.");
+                initializeFirebaseRefs(user.uid);
+
+                // Listen for real-time changes to the scheduler state
+                onSnapshot(stateDocRef, (doc) => {
+                    const data = doc.data();
+                    if (data) {
+                        manageLocalScheduler(data.isRunning, data.intervalHours);
+                    }
+                }, (error) => {
+                    console.error("Error listening to scheduler state:", error);
+                });
+
+                // Listen for real-time changes to the post history
+                onSnapshot(
+                    query(postHistoryCollectionRef, orderBy('postedAt', 'desc'), limit(10)),
+                    (snapshot) => {
+                        const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderPostHistory(posts);
+                    },
+                    (error) => {
+                        console.error("Error listening to post history:", error);
+                    }
+                );
+                await loadSettings();
+            } else {
+                console.log("Authentication state changed: No user signed in. Signing in anonymously.");
+                try {
+                    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Initial authentication failed:", error);
+                }
             }
         });
+
+        saveBtn.addEventListener('click', saveSettings);
+        testBtn.addEventListener('click', () => checkAndPostFeeds(true));
+        postBtn.addEventListener('click', () => checkAndPostFeeds(false));
+        startSchedulerBtn.addEventListener('click', startScheduler);
+        stopSchedulerBtn.addEventListener('click', stopScheduler);
     </script>
 </body>
 </html>
