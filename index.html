@@ -18,7 +18,7 @@
 <body class="bg-gray-100 p-8">
     <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Automated RSS to Social Media Poster</h1>
-        <p class="text-gray-600 text-center mb-8">Post your favorite RSS feed items to Mastodon and Bluesky. Simply enter your credentials and feed URL below!</p>
+        <p class="text-gray-600 text-center mb-8">Post your favorite RSS feed items to Mastodon and Bluesky. Simply enter your credentials and feed URLs below!</p>
 
         <div id="messageBox" class="hidden mb-4 p-4 rounded-lg text-center font-medium transition-opacity duration-300"></div>
 
@@ -53,10 +53,16 @@
                 </div>
             </div>
 
-            <!-- RSS Feed Section -->
+            <!-- RSS Feeds Section (UPDATED) -->
             <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">RSS Feed URL</h2>
-                <input type="text" id="rss-url" placeholder="Add RSS URL, e.g., https://www.nasa.gov/news/feed/" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">RSS Feed URLs</h2>
+                <div id="rss-feeds-container" class="space-y-4">
+                    <!-- Initial RSS feed input -->
+                    <div class="flex items-center space-x-2">
+                        <input type="text" placeholder="Add RSS URL, e.g., https://www.nasa.gov/news/feed/" class="rss-url-input flex-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                </div>
+                <button id="add-feed-btn" class="mt-4 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition duration-150 ease-in-out">Add another RSS feed</button>
             </div>
 
             <!-- Action Buttons -->
@@ -72,7 +78,8 @@
         const mastodonTokenInput = document.getElementById('mastodon-token');
         const blueskyIdentifierInput = document.getElementById('bluesky-identifier');
         const blueskyPasswordInput = document.getElementById('bluesky-password');
-        const rssUrlInput = document.getElementById('rss-url');
+        const rssFeedsContainer = document.getElementById('rss-feeds-container');
+        const addFeedBtn = document.getElementById('add-feed-btn');
         const testBtn = document.getElementById('test-connection-btn');
         const postBtn = document.getElementById('post-btn');
         const messageBox = document.getElementById('messageBox');
@@ -95,7 +102,7 @@
                 const parser = new DOMParser();
                 return parser.parseFromString(text, "text/xml");
             } catch (error) {
-                showMessage(`Error fetching RSS feed: ${error.message}`, 'bg-red-500 text-white');
+                showMessage(`Error fetching RSS feed from ${url}: ${error.message}`, 'bg-red-500 text-white');
                 return null;
             }
         }
@@ -116,6 +123,36 @@
                 }, 300);
             }, 5000);
         }
+
+        /**
+         * Adds a new RSS feed input field to the form.
+         */
+        function addFeedInput() {
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'flex items-center space-x-2';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = 'Add RSS URL, e.g., https://www.nasa.gov/news/feed/';
+            input.className = 'rss-url-input flex-1 mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm';
+
+            const removeBtn = document.createElement('button');
+            removeBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-700 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            `;
+            removeBtn.title = "Remove this feed";
+            removeBtn.addEventListener('click', () => {
+                wrapperDiv.remove();
+            });
+
+            wrapperDiv.appendChild(input);
+            wrapperDiv.appendChild(removeBtn);
+            rssFeedsContainer.appendChild(wrapperDiv);
+        }
+        addFeedBtn.addEventListener('click', addFeedInput);
+
 
         // --- Mastodon Functions ---
 
@@ -206,9 +243,9 @@
             const mastodonToken = mastodonTokenInput.value.trim();
             const blueskyIdentifier = blueskyIdentifierInput.value.trim();
             const blueskyPassword = blueskyPasswordInput.value.trim();
-            const rssUrl = rssUrlInput.value.trim();
+            const rssUrls = Array.from(document.querySelectorAll('.rss-url-input')).map(input => input.value.trim()).filter(Boolean);
 
-            if (!mastodonServer && !blueskyIdentifier && !rssUrl) {
+            if (!mastodonServer && !blueskyIdentifier && rssUrls.length === 0) {
                 showMessage('Please enter at least one URL or credential to test.', 'bg-yellow-500 text-white');
                 return;
             }
@@ -216,8 +253,6 @@
             let mastodonSuccess = false;
             if (mastodonServer && mastodonToken) {
                 showMessage('Testing Mastodon connection...', 'bg-blue-500 text-white');
-                // The most reliable way to test a Mastodon token is to try posting something.
-                // We'll post a private, unlisted status.
                 const testStatus = 'This is a test post from my RSS reader app.';
                 const response = await fetch(`${mastodonServer}/api/v1/statuses`, {
                     method: 'POST',
@@ -227,12 +262,11 @@
                     },
                     body: JSON.stringify({
                         status: testStatus,
-                        visibility: 'unlisted' // Unlisted so it doesn't appear on public timelines
+                        visibility: 'unlisted'
                     })
                 });
                 if (response.ok) {
                     mastodonSuccess = true;
-                    // Delete the test post to clean up
                     const data = await response.json();
                     if (data.id) {
                         await fetch(`${mastodonServer}/api/v1/statuses/${data.id}`, {
@@ -252,12 +286,15 @@
                 }
             }
 
-            let rssSuccess = false;
-            if (rssUrl) {
-                showMessage('Testing RSS feed...', 'bg-blue-500 text-white');
-                const feed = await fetchRssFeed(rssUrl);
-                if (feed) {
-                    rssSuccess = true;
+            let rssSuccess = true;
+            if (rssUrls.length > 0) {
+                showMessage('Testing RSS feeds...', 'bg-blue-500 text-white');
+                for (const url of rssUrls) {
+                    const feed = await fetchRssFeed(url);
+                    if (!feed) {
+                        rssSuccess = false;
+                        break;
+                    }
                 }
             }
 
@@ -268,7 +305,7 @@
             if (blueskyIdentifier && blueskyPassword) {
                 messages.push(`Bluesky connection: ${blueskySuccess ? 'SUCCESS' : 'FAILURE'}.`);
             }
-            if (rssUrl) {
+            if (rssUrls.length > 0) {
                 messages.push(`RSS feed check: ${rssSuccess ? 'SUCCESS' : 'FAILURE'}.`);
             }
 
@@ -284,62 +321,74 @@
             const mastodonToken = mastodonTokenInput.value.trim();
             const blueskyIdentifier = blueskyIdentifierInput.value.trim();
             const blueskyPassword = blueskyPasswordInput.value.trim();
-            const rssUrl = rssUrlInput.value.trim();
+            const rssUrls = Array.from(document.querySelectorAll('.rss-url-input')).map(input => input.value.trim()).filter(Boolean);
 
-            if (!rssUrl) {
-                showMessage('Please enter an RSS feed URL first.', 'bg-yellow-500 text-white');
+            if (rssUrls.length === 0) {
+                showMessage('Please enter at least one RSS feed URL.', 'bg-yellow-500 text-white');
                 return;
             }
 
-            showMessage('Fetching RSS feed...', 'bg-yellow-500 text-white');
-            const feed = await fetchRssFeed(rssUrl);
-            if (!feed) return;
-
-            const items = feed.querySelectorAll('item');
-            if (items.length === 0) {
-                showMessage('No items found in RSS feed.', 'bg-yellow-500 text-white');
-                return;
-            }
-
-            const latestItem = items[0];
-            const title = latestItem.querySelector('title')?.textContent;
-            const link = latestItem.querySelector('link')?.textContent;
-            const description = latestItem.querySelector('description')?.textContent;
-
-            if (!title || !link) {
-                showMessage('Latest RSS item is missing a title or link.', 'bg-red-500 text-white');
-                return;
-            }
-
-            const postText = `New Post: ${title}\n\nRead more here: ${link}`;
-
-            let mastodonPosted = false;
-            if (mastodonServer && mastodonToken) {
-                showMessage('Posting to Mastodon...', 'bg-blue-500 text-white');
-                mastodonPosted = await postToMastodon(mastodonServer, mastodonToken, postText);
-            }
-
-            let blueskyPosted = false;
+            let blueskySession = null;
             if (blueskyIdentifier && blueskyPassword) {
-                showMessage('Posting to Bluesky...', 'bg-blue-500 text-white');
-                const session = await createBlueskySession(blueskyIdentifier, blueskyPassword);
-                if (session && session.accessJwt) {
-                    blueskyPosted = await postToBluesky(postText, session.accessJwt);
+                blueskySession = await createBlueskySession(blueskyIdentifier, blueskyPassword);
+                if (!blueskySession) {
+                    showMessage('Bluesky login failed. Aborting post.', 'bg-red-500 text-white');
+                    return;
                 }
             }
 
+            let overallSuccess = true;
             let messages = [];
-            if (mastodonServer && mastodonToken) {
-                messages.push(`Mastodon post: ${mastodonPosted ? 'SUCCESS' : 'FAILURE'}.`);
-            }
-            if (blueskyIdentifier && blueskyPassword) {
-                messages.push(`Bluesky post: ${blueskyPosted ? 'SUCCESS' : 'FAILURE'}.`);
+
+            for (const rssUrl of rssUrls) {
+                showMessage(`Fetching RSS feed from ${rssUrl}...`, 'bg-yellow-500 text-white');
+                const feed = await fetchRssFeed(rssUrl);
+                if (!feed) {
+                    messages.push(`Failed to fetch from ${rssUrl}.`);
+                    overallSuccess = false;
+                    continue;
+                }
+
+                const items = feed.querySelectorAll('item');
+                if (items.length === 0) {
+                    messages.push(`No items found in feed ${rssUrl}.`);
+                    continue;
+                }
+
+                const latestItem = items[0];
+                const title = latestItem.querySelector('title')?.textContent;
+                const link = latestItem.querySelector('link')?.textContent;
+
+                if (!title || !link) {
+                    messages.push(`Item from ${rssUrl} is missing a title or link. Skipping.`);
+                    continue;
+                }
+
+                const postText = `New Post: ${title}\n\nRead more here: ${link}`;
+
+                let mastodonPosted = false;
+                if (mastodonServer && mastodonToken) {
+                    mastodonPosted = await postToMastodon(mastodonServer, mastodonToken, postText);
+                }
+
+                let blueskyPosted = false;
+                if (blueskySession) {
+                    blueskyPosted = await postToBluesky(postText, blueskySession.accessJwt);
+                }
+
+                if (mastodonServer && mastodonToken) {
+                    messages.push(`Mastodon post from ${rssUrl}: ${mastodonPosted ? 'SUCCESS' : 'FAILURE'}.`);
+                    if (!mastodonPosted) overallSuccess = false;
+                }
+                if (blueskySession) {
+                    messages.push(`Bluesky post from ${rssUrl}: ${blueskyPosted ? 'SUCCESS' : 'FAILURE'}.`);
+                    if (!blueskyPosted) overallSuccess = false;
+                }
             }
 
             if (messages.length > 0) {
                 const combinedMessage = messages.join(' ');
-                const isOverallSuccess = messages.every(msg => msg.includes('SUCCESS'));
-                showMessage(combinedMessage, isOverallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
+                showMessage(combinedMessage, overallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
             } else {
                 showMessage('No social media accounts were configured.', 'bg-yellow-500 text-white');
             }
