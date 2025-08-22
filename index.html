@@ -1,136 +1,160 @@
-import React, { useState, useEffect } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS Feed Reader</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and ReactDOM libraries -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for transpiling JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
-// The main App component for the RSS feed reader.
-const App = () => {
-  // State to hold the fetched feed items.
-  const [feedItems, setFeedItems] = useState([]);
-  // State for the loading indicator.
-  const [isLoading, setIsLoading] = useState(true);
-  // State for error messages.
-  const [error, setError] = useState(null);
-  // State for the user-defined RSS feed URL.
-  const [rssUrl, setRssUrl] = useState('https://www.theverge.com/rss/index.xml');
-
-  // A utility function to parse an XML string into a DOM document.
-  const parseXml = (xmlString) => {
-    const parser = new DOMParser();
-    return parser.parseFromString(xmlString, "text/xml");
-  };
-
-  // A function to handle the fetch and parsing of the RSS feed.
-  const fetchFeed = async (url) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Using a CORS proxy to bypass cross-origin issues.
-      const corsProxy = 'https://api.allorigins.win/raw?url=';
-      const response = await fetch(`${corsProxy}${encodeURIComponent(url)}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const xmlText = await response.text();
-      const xmlDoc = parseXml(xmlText);
-
-      // Select all 'item' elements from the parsed XML.
-      const items = xmlDoc.querySelectorAll("item");
-      const newItems = [];
-
-      // Iterate through each 'item' and extract relevant data.
-      items.forEach(item => {
-        const title = item.querySelector("title")?.textContent || "No Title";
-        const link = item.querySelector("link")?.textContent || "#";
-        const description = item.querySelector("description")?.textContent || "No Description";
-        const pubDate = item.querySelector("pubDate")?.textContent || "No Date";
-        const creator = item.querySelector("creator")?.textContent || "Unknown Creator";
-
-        newItems.push({ title, link, description, pubDate, creator });
-      });
-      setFeedItems(newItems);
-    } catch (e) {
-      console.error("Error fetching or parsing feed:", e);
-      setError("Failed to load RSS feed. Please check the URL.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // useEffect hook to fetch the feed on initial component load.
-  useEffect(() => {
-    fetchFeed(rssUrl);
-  }, [rssUrl]);
-
-  // Handle form submission to update the URL and fetch a new feed.
-  const handleUrlSubmit = (e) => {
-    e.preventDefault();
-    const newUrl = e.target.elements.urlInput.value;
-    setRssUrl(newUrl);
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4 font-sans">
-      <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl border border-gray-200">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">RSS Feed Reader</h1>
-        <p className="text-gray-500 mb-6 text-center">
-          Enter an RSS feed URL to see the latest articles.
-        </p>
-
-        <form onSubmit={handleUrlSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
-          <input
-            type="text"
-            name="urlInput"
-            defaultValue={rssUrl}
-            className="flex-1 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., https://www.theverge.com/rss/index.xml"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Load Feed
-          </button>
-        </form>
-
-        {/* Conditional rendering for loading, error, and content. */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-            <span className="ml-3 text-gray-600">Loading feed...</span>
-          </div>
-        ) : error ? (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
-            <strong className="font-bold">Error:</strong>
-            <span className="block sm:inline ml-2">{error}</span>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {feedItems.length > 0 ? (
-              feedItems.map((item, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
-                  <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-blue-600 hover:underline">
-                    {item.title}
-                  </a>
-                  <p className="text-sm text-gray-500 mt-1">Published: {new Date(item.pubDate).toLocaleString()}</p>
-                  <p className="text-gray-700 mt-2 line-clamp-3">
-                    {/* The replace function removes HTML tags from the description */}
-                    {item.description.replace(/(<([^>]+)>)/ig, '')}
-                  </p>
-                  <a href={item.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-blue-500 hover:underline">
-                    Read more &rarr;
-                  </a>
-                </div>
-              ))
-            ) : (
-              <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg" role="alert">
-                <p className="font-bold">No Items</p>
-                <p>No items found in this RSS feed.</p>
+    <script type="text/babel">
+        // Main React component for the RSS feed reader.
+        const App = () => {
+          // State to hold the fetched feed items.
+          const [feedItems, setFeedItems] = React.useState([]);
+          // State for the loading indicator.
+          const [isLoading, setIsLoading] = React.useState(true);
+          // State for error messages.
+          const [error, setError] = React.useState(null);
+          // State for the user-defined RSS feed URL.
+          const [rssUrl, setRssUrl] = React.useState('https://www.theverge.com/rss/index.xml');
+        
+          // A utility function to parse an XML string into a DOM document.
+          const parseXml = (xmlString) => {
+            const parser = new DOMParser();
+            return parser.parseFromString(xmlString, "text/xml");
+          };
+        
+          // A function to handle the fetch and parsing of the RSS feed.
+          const fetchFeed = async (url) => {
+            setIsLoading(true);
+            setError(null);
+            try {
+              // Using a CORS proxy to bypass cross-origin issues.
+              const corsProxy = 'https://api.allorigins.win/raw?url=';
+              const response = await fetch(`${corsProxy}${encodeURIComponent(url)}`);
+        
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
+              const xmlText = await response.text();
+              const xmlDoc = parseXml(xmlText);
+        
+              // Select all 'item' elements from the parsed XML.
+              const items = xmlDoc.querySelectorAll("item");
+              const newItems = [];
+        
+              // Iterate through each 'item' and extract relevant data.
+              items.forEach(item => {
+                const title = item.querySelector("title")?.textContent || "No Title";
+                const link = item.querySelector("link")?.textContent || "#";
+                const description = item.querySelector("description")?.textContent || "No Description";
+                const pubDate = item.querySelector("pubDate")?.textContent || "No Date";
+                const creator = item.querySelector("creator")?.textContent || "Unknown Creator";
+        
+                newItems.push({ title, link, description, pubDate, creator });
+              });
+              setFeedItems(newItems);
+            } catch (e) {
+              console.error("Error fetching or parsing feed:", e);
+              setError("Failed to load RSS feed. Please check the URL.");
+            } finally {
+              setIsLoading(false);
+            }
+          };
+        
+          // useEffect hook to fetch the feed on initial component load.
+          React.useEffect(() => {
+            fetchFeed(rssUrl);
+          }, [rssUrl]);
+        
+          // Handle form submission to update the URL and fetch a new feed.
+          const handleUrlSubmit = (e) => {
+            e.preventDefault();
+            const newUrl = e.target.elements.urlInput.value;
+            setRssUrl(newUrl);
+          };
+        
+          return (
+            <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-2xl border border-gray-200">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">RSS Feed Reader</h1>
+                <p className="text-gray-500 mb-6 text-center">
+                  Enter an RSS feed URL to see the latest articles.
+                </p>
+        
+                <form onSubmit={handleUrlSubmit} className="flex flex-col sm:flex-row gap-2 mb-6">
+                  <input
+                    type="text"
+                    name="urlInput"
+                    defaultValue={rssUrl}
+                    className="flex-1 p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., https://www.theverge.com/rss/index.xml"
+                  />
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Load Feed
+                  </button>
+                </form>
+        
+                {/* Conditional rendering for loading, error, and content. */}
+                {isLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    <span className="ml-3 text-gray-600">Loading feed...</span>
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                    <strong className="font-bold">Error:</strong>
+                    <span className="block sm:inline ml-2">{error}</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {feedItems.length > 0 ? (
+                      feedItems.map((item, index) => (
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg shadow-sm border border-gray-200">
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-blue-600 hover:underline">
+                            {item.title}
+                          </a>
+                          <p className="text-sm text-gray-500 mt-1">Published: {new Date(item.pubDate).toLocaleString()}</p>
+                          <p className="text-gray-700 mt-2 line-clamp-3">
+                            {/* The replace function removes HTML tags from the description */}
+                            {item.description.replace(/(<([^>]+)>)/ig, '')}
+                          </p>
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-blue-500 hover:underline">
+                            Read more &rarr;
+                          </a>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg" role="alert">
+                        <p className="font-bold">No Items</p>
+                        <p>No items found in this RSS feed.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default App;
+            </div>
+          );
+        };
+        
+        // Render the App component into the root div.
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
