@@ -3,192 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Chat</title>
+    <title>Real-time Chat App</title>
+    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        .chat-container {
-            max-width: 600px;
-            margin: 2rem auto;
-            border-radius: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
-        }
-        .chat-messages {
-            height: 70vh;
-            overflow-y: auto;
-            scroll-behavior: smooth;
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-    <div id="loadingIndicator" class="absolute inset-0 bg-gray-100 flex items-center justify-center z-50">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 border-gray-200"></div>
-    </div>
+    <!-- Main container for the chat application -->
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 my-8 flex flex-col h-[80vh]">
 
-    <div class="chat-container bg-white p-6 md:p-8 flex flex-col h-[85vh]">
-        <div id="username-display" class="bg-blue-600 text-white text-center py-2 px-4 rounded-t-xl text-lg font-semibold -m-6 md:-m-8 mb-6 md:mb-8">
-            Your User ID: <span id="userIdDisplay">Loading...</span>
+        <!-- Header section -->
+        <div class="p-6 bg-blue-600 rounded-t-2xl text-white">
+            <h1 class="text-3xl font-bold text-center">Chat App</h1>
         </div>
 
-        <div id="chat-messages" class="chat-messages flex-1 p-4 md:p-6 bg-gray-50 rounded-lg overflow-y-auto mb-4 border border-gray-200">
-            <!-- Messages will be injected here -->
+        <!-- Chat messages display area -->
+        <div id="messages" class="flex-1 overflow-y-auto p-6 space-y-4">
+            <!-- Messages will be injected here by JavaScript -->
         </div>
 
-        <form id="message-form" class="flex items-center space-x-2">
-            <input type="text" id="message-input" placeholder="Type your message..." class="flex-1 p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200" required>
-            <button type="submit" class="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 transition-colors duration-200 shadow-md">
+        <!-- Message input form -->
+        <form id="messageForm" class="flex p-4 border-t border-gray-200">
+            <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 rounded-full px-4 py-2 bg-gray-100 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
+            <button type="submit" class="ml-2 px-6 py-2 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200">
                 Send
             </button>
         </form>
+
     </div>
 
-    <!-- Firebase SDKs -->
+    <!-- The modal for displaying alerts, replacing the native alert() function -->
+    <div id="alertModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-full max-w-sm">
+            <h3 class="text-xl font-bold text-red-600 mb-4">Error</h3>
+            <p id="alertMessage" class="text-gray-700 mb-4"></p>
+            <button id="alertCloseBtn" class="w-full bg-red-600 text-white font-semibold py-2 rounded-lg hover:bg-red-700 transition-colors">Close</button>
+        </div>
+    </div>
+
+    <!-- Firebase CDN scripts for authentication and Firestore -->
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+
     <script type="module">
+        // Import necessary Firebase functions
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // IMPORTANT: This is a placeholder Firebase config.
-        // It's a temporary workaround to make the app self-contained and runnable.
+        // IMPORTANT: PASTE YOUR FIREBASE CONFIGURATION HERE
+        // Go to your Firebase project console -> Project settings -> General -> Your apps
+        // Then copy the firebaseConfig object and paste it below.
         const firebaseConfig = {
-            apiKey: "mock-api-key",
-            authDomain: "mock-auth-domain",
-            projectId: "mock-project-id",
-            storageBucket: "mock-storage-bucket",
-            messagingSenderId: "mock-sender-id",
-            appId: "mock-app-id"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
-        
-        // Use a mock app ID since we don't have the dynamic one
-        const appId = 'classic-tv-all-the-time-lang';
+        // END OF FIREBASE CONFIGURATION
 
-        // ----------------------------------------------------
-        // INITIALIZE FIREBASE AND AUTHENTICATION
-        // ----------------------------------------------------
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        let userId = null;
+        // Global variables for the app
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        let db, auth, userId;
 
-        const loadingIndicator = document.getElementById('loadingIndicator');
+        // Custom alert function to replace native alert()
+        const alertModal = document.getElementById('alertModal');
+        const alertMessage = document.getElementById('alertMessage');
+        const alertCloseBtn = document.getElementById('alertCloseBtn');
 
-        // Function to show the loading indicator
-        function showLoading() {
-            loadingIndicator.style.display = 'flex';
+        function showAlert(message) {
+            alertMessage.textContent = message;
+            alertModal.classList.remove('hidden');
         }
 
-        // Function to hide the loading indicator
-        function hideLoading() {
-            loadingIndicator.style.display = 'none';
-        }
+        alertCloseBtn.addEventListener('click', () => {
+            alertModal.classList.add('hidden');
+        });
 
-        // We use an asynchronous IIFE (Immediately Invoked Function Expression)
-        // to handle Firebase authentication and data loading.
-        (async () => {
-            showLoading();
+        // Main application logic
+        window.addEventListener('load', async () => {
+            // Check if the user has provided a Firebase configuration
+            if (!firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_PROJECT_ID") {
+                showAlert("Firebase configuration is missing or incomplete. Please paste your details into the code.");
+                return;
+            }
+
             try {
-                // Sign in anonymously to get a user ID.
-                const userCredential = await signInAnonymously(auth);
-                userId = userCredential.user.uid;
-                console.log("Signed in with user ID:", userId);
+                // Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
 
-                // Display the user ID
-                const userIdDisplay = document.getElementById('userIdDisplay');
-                if (userIdDisplay) {
-                    userIdDisplay.textContent = userId;
-                }
+                // Sign in the user anonymously
+                await signInAnonymously(auth);
+                userId = auth.currentUser.uid;
+                console.log("User signed in with UID:", userId);
 
-                // Check for existence of user document, and create if it doesn't exist
-                const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'userData', 'profile');
-                await setDoc(userDocRef, {
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
-
-                // ----------------------------------------------------
-                // LISTEN FOR REAL-TIME CHAT MESSAGES
-                // ----------------------------------------------------
-                const messagesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-                const q = query(messagesCollectionRef, orderBy('createdAt'));
-                
-                onSnapshot(q, (snapshot) => {
-                    const messagesList = document.getElementById('chat-messages');
-                    messagesList.innerHTML = ''; // Clear existing messages
-                    snapshot.forEach((doc) => {
-                        const messageData = doc.data();
-                        const isUserMessage = messageData.userId === userId;
-                        const messageElement = document.createElement('div');
-                        
-                        // Use flexbox and Tailwind classes for message bubbles
-                        messageElement.className = `flex mb-2 ${isUserMessage ? 'justify-end' : 'justify-start'}`;
-                        
-                        const bubble = document.createElement('div');
-                        const bubbleClasses = isUserMessage
-                            ? 'bg-blue-500 text-white rounded-xl py-2 px-4 shadow-md max-w-[80%]'
-                            : 'bg-gray-300 text-gray-800 rounded-xl py-2 px-4 shadow-md max-w-[80%]';
-                        bubble.className = bubbleClasses;
-                        
-                        const userNameElement = document.createElement('div');
-                        userNameElement.className = `text-xs font-medium mb-1 ${isUserMessage ? 'text-right' : 'text-left'}`;
-                        userNameElement.textContent = isUserMessage ? 'You' : `User: ${messageData.userId}`;
-                        
-                        const textElement = document.createElement('p');
-                        textElement.textContent = messageData.text;
-
-                        bubble.appendChild(userNameElement);
-                        bubble.appendChild(textElement);
-                        messageElement.appendChild(bubble);
-                        messagesList.appendChild(messageElement);
-                    });
-
-                    // Scroll to the bottom to show the newest message
-                    messagesList.scrollTop = messagesList.scrollHeight;
-                });
-
-                hideLoading();
+                // Initialize the rest of the app after successful authentication
+                setupChatApp();
 
             } catch (error) {
-                console.error("Error during initialization:", error);
-                document.body.innerHTML = `
-                    <div class="absolute inset-0 bg-red-100 flex items-center justify-center text-red-700 text-center p-4">
-                        <p>Error: Could not load the chat app. Please check the console for details.</p>
-                    </div>
-                `;
-            }
-        })();
-
-        // ----------------------------------------------------
-        // HANDLE MESSAGE SUBMISSION
-        // ----------------------------------------------------
-        const form = document.getElementById('message-form');
-        const messageInput = document.getElementById('message-input');
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = messageInput.value.trim();
-            if (text === '') return;
-
-            if (userId) {
-                try {
-                    // Add a new document to the messages collection
-                    const messagesCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-                    await addDoc(messagesCollectionRef, {
-                        userId: userId,
-                        text: text,
-                        createdAt: serverTimestamp()
-                    });
-                    messageInput.value = ''; // Clear the input field
-                } catch (e) {
-                    console.error("Error adding document: ", e);
-                }
-            } else {
-                console.error("User not authenticated.");
+                console.error("Error initializing Firebase or signing in:", error);
+                showAlert("Failed to initialize the application. Please check the console for details.");
             }
         });
+
+        // Function to set up chat functionality
+        function setupChatApp() {
+            const messageForm = document.getElementById('messageForm');
+            const messageInput = document.getElementById('messageInput');
+            const messagesContainer = document.getElementById('messages');
+
+            // Reference to the chat messages collection
+            const chatCollectionPath = `public-chat/messages`;
+            const messagesRef = collection(db, chatCollectionPath);
+
+            // Listen for new messages in real-time
+            const q = query(messagesRef);
+
+            // The onSnapshot listener provides real-time updates to the UI
+            onSnapshot(q, (snapshot) => {
+                const fetchedMessages = [];
+                snapshot.forEach(doc => {
+                    fetchedMessages.push(doc.data());
+                });
+
+                // Sort the messages by timestamp in the client-side
+                const sortedMessages = fetchedMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+                messagesContainer.innerHTML = ''; // Clear existing messages
+                sortedMessages.forEach(message => {
+                    const isCurrentUser = message.userId === userId;
+                    const messageElement = createMessageElement(message, isCurrentUser);
+                    messagesContainer.appendChild(messageElement);
+                });
+
+                // Scroll to the bottom of the chat window
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            }, (error) => {
+                console.error("Error fetching messages:", error);
+                showAlert("Failed to load messages. Please check the console for details.");
+            });
+
+            // Handle form submission
+            messageForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const messageText = messageInput.value.trim();
+
+                if (messageText) {
+                    try {
+                        await addDoc(messagesRef, {
+                            text: messageText,
+                            userId: userId,
+                            timestamp: Date.now(),
+                            displayId: userId.substring(0, 8),
+                        });
+                        messageInput.value = '';
+                    } catch (error) {
+                        console.error("Error sending message:", error);
+                        showAlert("Failed to send message. Please try again.");
+                    }
+                }
+            });
+
+            // Helper function to create a message element with styling
+            function createMessageElement(message, isCurrentUser) {
+                const div = document.createElement('div');
+                div.classList.add('flex', 'flex-col', 'max-w-[75%]');
+                div.classList.add(isCurrentUser ? 'self-end' : 'self-start');
+
+                const bubbleClasses = isCurrentUser
+                    ? 'bg-blue-600 text-white rounded-b-2xl rounded-tl-2xl'
+                    : 'bg-gray-200 text-gray-900 rounded-b-2xl rounded-tr-2xl';
+
+                div.innerHTML = `
+                    <div class="text-xs text-gray-500 mb-1 ${isCurrentUser ? 'text-right' : 'text-left'}">
+                        ${isCurrentUser ? 'You' : `User ID: ${message.displayId}`}
+                    </div>
+                    <div class="px-4 py-3 shadow-md ${bubbleClasses}">
+                        <p>${message.text}</p>
+                    </div>
+                `;
+                return div;
+            }
+        }
     </script>
+
 </body>
 </html>
