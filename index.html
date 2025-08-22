@@ -3,320 +3,347 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced RSS Reader</title>
-    <!-- Use Tailwind CSS for modern styling -->
+    <title>RSS to Social Poster</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
-            color: #1f2937;
         }
     </style>
 </head>
-<body class="bg-gray-100 p-8 flex flex-col items-center min-h-screen">
-    <div class="max-w-4xl w-full bg-white p-6 rounded-3xl shadow-2xl mb-8">
-        <h1 class="text-3xl font-bold text-center text-indigo-600 mb-6">Advanced RSS Feed Reader</h1>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Automated RSS to Social Media Poster</h1>
+        <p class="text-gray-600 text-center mb-8">Post your favorite RSS feed items to Mastodon and Bluesky. Simply enter your credentials and feed URL below!</p>
 
-        <!-- API Key Input Section (for demonstration and warning) -->
-        <div class="mb-8 p-4 bg-yellow-100 rounded-xl border border-yellow-300">
-            <h2 class="text-xl font-semibold text-yellow-800 mb-2">Social Media API Configuration</h2>
-            <p class="text-yellow-700 text-sm mb-4">
-                ⚠️ **SECURITY WARNING:** This is for demonstration only. In a production environment, you would **NEVER** store API keys in client-side code like this. They should be handled securely on a server.
-            </p>
-            <div class="space-y-4">
-                <div>
-                    <label for="mastodon-token" class="block text-sm font-medium text-gray-700">Mastodon API Token:</label>
-                    <input type="password" id="mastodon-token" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Paste your Mastodon token here">
-                </div>
-                <div>
-                    <label for="bluesky-password" class="block text-sm font-medium text-gray-700">Bluesky App Password:</label>
-                    <input type="password" id="bluesky-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" placeholder="Paste your Bluesky app password here">
-                </div>
-            </div>
-        </div>
+        <div id="messageBox" class="hidden mb-4 p-4 rounded-lg text-center font-medium transition-opacity duration-300"></div>
 
-        <!-- Feed Management Section -->
-        <div class="mb-6">
-            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Add an RSS Feed URL</h2>
-            <div class="flex items-center space-x-2">
-                <input type="text" id="feed-input" class="flex-grow rounded-xl border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 p-3 shadow-md" placeholder="Enter RSS feed URL (e.g., https://www.wired.com/feed/rss)">
-                <button id="add-feed-button" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl transition duration-300 shadow-lg">Add Feed</button>
-            </div>
-        </div>
-
-        <!-- Stored Feeds List -->
-        <div id="feeds-list" class="mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Your Subscribed Feeds</h2>
-            <ul id="feed-urls" class="space-y-2">
-                <!-- Feed URLs will be dynamically added here -->
-            </ul>
-        </div>
-
-        <!-- Feed Content Display -->
-        <div>
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Latest Articles</h2>
-            <div id="articles-container" class="space-y-6">
-                <!-- Articles will be loaded here -->
-            </div>
-            <div id="loading-message" class="text-center text-gray-500 my-8 hidden">
-                <div class="flex justify-center items-center">
-                    <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Loading feeds...
+        <div class="space-y-6">
+            <!-- Mastodon Section -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Mastodon Settings</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="mastodon-server" class="block text-sm font-medium text-gray-700">Mastodon Server URL (e.g., https://mastodon.social)</label>
+                        <input type="text" id="mastodon-server" placeholder="https://your-mastodon-instance.social" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="mastodon-token" class="block text-sm font-medium text-gray-700">Mastodon API Token</label>
+                        <input type="password" id="mastodon-token" placeholder="Enter your Mastodon API token" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Reusable Modal for Sharing -->
-    <div id="share-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center p-4">
-        <div class="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm transform scale-95 transition-transform duration-300">
-            <h3 class="text-2xl font-bold mb-4">Share Article</h3>
-            <p class="text-gray-700 mb-4" id="modal-title"></p>
-            <div class="flex justify-between space-x-4">
-                <button id="share-mastodon" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition duration-300">Share to Mastodon</button>
-                <button id="share-bluesky" class="flex-1 bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-xl shadow-lg transition duration-300">Share to Bluesky</button>
+            <!-- Bluesky Section -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Bluesky Settings</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="bluesky-identifier" class="block text-sm font-medium text-gray-700">Bluesky Handle or Email</label>
+                        <input type="text" id="bluesky-identifier" placeholder="yourhandle.bsky.social or your@email.com" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="bluesky-password" class="block text-sm font-medium text-gray-700">Bluesky App Password</label>
+                        <input type="password" id="bluesky-password" placeholder="Enter your Bluesky App Password" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                </div>
             </div>
-            <button id="close-modal" class="mt-4 w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-xl transition duration-300">Close</button>
+
+            <!-- RSS Feed Section -->
+            <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">RSS Feed URL</h2>
+                <input type="text" id="rss-url" placeholder="Add RSS URL, e.g., https://www.nasa.gov/news/feed/" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-center space-x-4">
+                <button id="test-connection-btn" class="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">Test Connections</button>
+                <button id="post-btn" class="w-1/2 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out">Fetch & Post to Social Media</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- Core Application Logic ---
-
-        // The CORS proxy to bypass cross-origin restrictions.
-        const CORS_PROXY = "https://api.allorigins.win/raw?url=";
-        const feeds = JSON.parse(localStorage.getItem('rssFeeds')) || [];
-        const articlesContainer = document.getElementById('articles-container');
-        const feedInput = document.getElementById('feed-input');
-        const addFeedButton = document.getElementById('add-feed-button');
-        const feedUrlsList = document.getElementById('feed-urls');
-        const loadingMessage = document.getElementById('loading-message');
-
-        // Modal elements
-        const shareModal = document.getElementById('share-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const shareMastodonBtn = document.getElementById('share-mastodon');
-        const shareBlueskyBtn = document.getElementById('share-bluesky');
-        const closeModalBtn = document.getElementById('close-modal');
-
-        let currentArticle = null;
+        const mastodonServerInput = document.getElementById('mastodon-server');
+        const mastodonTokenInput = document.getElementById('mastodon-token');
+        const blueskyIdentifierInput = document.getElementById('bluesky-identifier');
+        const blueskyPasswordInput = document.getElementById('bluesky-password');
+        const rssUrlInput = document.getElementById('rss-url');
+        const testBtn = document.getElementById('test-connection-btn');
+        const postBtn = document.getElementById('post-btn');
+        const messageBox = document.getElementById('messageBox');
+        
+        // --- Utility Functions ---
 
         /**
-         * Parses an RSS XML string and extracts articles.
-         * @param {string} xmlString The raw XML string from the RSS feed.
-         * @returns {Array<Object>} An array of article objects.
-         */
-        function parseXml(xmlString) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-            const items = xmlDoc.querySelectorAll("item");
-            const articles = [];
-
-            items.forEach(item => {
-                const title = item.querySelector("title")?.textContent || "No Title";
-                const link = item.querySelector("link")?.textContent || "#";
-                const description = item.querySelector("description")?.textContent || "No Description";
-                const pubDate = item.querySelector("pubDate")?.textContent ? new Date(item.querySelector("pubDate").textContent) : new Date();
-
-                articles.push({ title, link, description, pubDate });
-            });
-            return articles;
-        }
-
-        /**
-         * Fetches and displays a single RSS feed.
+         * Fetches an RSS feed using a CORS proxy.
          * @param {string} url The URL of the RSS feed.
-         * @returns {Promise<Array<Object>>} A promise that resolves with an array of articles.
+         * @returns {Promise<Document>} The parsed XML document.
          */
-        async function fetchFeed(url) {
+        async function fetchRssFeed(url) {
             try {
-                const response = await fetch(`${CORS_PROXY}${encodeURIComponent(url)}`);
+                const corsProxy = 'https://api.allorigins.win/raw?url=';
+                const response = await fetch(corsProxy + encodeURIComponent(url));
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const text = await response.text();
-                return parseXml(text);
+                const parser = new DOMParser();
+                return parser.parseFromString(text, "text/xml");
             } catch (error) {
-                console.error(`Could not fetch feed: ${url}`, error);
-                // Return an empty array on failure so other feeds can still load.
-                return [];
+                showMessage(`Error fetching RSS feed: ${error.message}`, 'bg-red-500 text-white');
+                return null;
             }
         }
 
         /**
-         * Fetches all subscribed RSS feeds and displays them.
+         * Displays a temporary message in the message box.
+         * @param {string} message The message to display.
+         * @param {string} type The Tailwind CSS classes for styling (e.g., 'bg-green-500 text-white').
          */
-        async function fetchAllFeeds() {
-            if (feeds.length === 0) {
-                articlesContainer.innerHTML = '<p class="text-center text-gray-500">No feeds added yet. Add a URL above to get started.</p>';
-                return;
-            }
-
-            loadingMessage.classList.remove('hidden');
-            const fetchPromises = feeds.map(url => fetchFeed(url));
-            const results = await Promise.all(fetchPromises);
-            
-            // Flatten the array of article arrays and sort by date.
-            const allArticles = results.flat().sort((a, b) => b.pubDate - a.pubDate);
-            
-            loadingMessage.classList.add('hidden');
-            renderArticles(allArticles);
+        function showMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = `block mb-4 p-4 rounded-lg text-center font-medium transition-opacity duration-300 ${type}`;
+            messageBox.style.opacity = '1';
+            setTimeout(() => {
+                messageBox.style.opacity = '0';
+                setTimeout(() => {
+                    messageBox.className = 'hidden';
+                }, 300);
+            }, 5000);
         }
 
+        // --- Mastodon Functions ---
+
         /**
-         * Renders the articles to the page.
-         * @param {Array<Object>} articles The array of articles to render.
+         * Posts a status to Mastodon.
+         * @param {string} serverUrl The Mastodon instance URL.
+         * @param {string} token The API token.
+         * @param {string} status The content of the post.
+         * @returns {Promise<boolean>} True if successful, false otherwise.
          */
-        function renderArticles(articles) {
-            if (articles.length === 0) {
-                articlesContainer.innerHTML = '<p class="text-center text-gray-500">No articles found. Try adding a different feed or checking your URLs.</p>';
-                return;
-            }
-
-            articlesContainer.innerHTML = articles.map(article => `
-                <div class="p-6 bg-gray-50 rounded-xl shadow-lg border-l-4 border-indigo-500 hover:shadow-xl transition-shadow duration-300">
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">
-                        <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="hover:text-indigo-600 transition-colors duration-200">
-                            ${article.title}
-                        </a>
-                    </h3>
-                    <p class="text-gray-600 text-sm mb-4">${article.description.replace(/<[^>]+>/g, '').substring(0, 200)}...</p>
-                    <div class="flex items-center justify-between text-sm text-gray-500">
-                        <span>${article.pubDate.toLocaleDateString()}</span>
-                        <button class="share-button bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-1 px-4 rounded-full transition duration-300" 
-                                data-title="${article.title}" 
-                                data-link="${article.link}">
-                            Share
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Add event listeners for the share buttons
-            document.querySelectorAll('.share-button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const title = event.target.getAttribute('data-title');
-                    const link = event.target.getAttribute('data-link');
-                    openShareModal(title, link);
+        async function postToMastodon(serverUrl, token, status) {
+            try {
+                const response = await fetch(`${serverUrl}/api/v1/statuses`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status })
                 });
-            });
+                return response.ok;
+            } catch (error) {
+                console.error('Mastodon post error:', error);
+                return false;
+            }
+        }
+
+        // --- Bluesky Functions ---
+
+        /**
+         * Creates a session with the Bluesky API.
+         * @param {string} identifier The user's handle or email.
+         * @param {string} password The app password.
+         * @returns {Promise<object>} The session object or null on failure.
+         */
+        async function createBlueskySession(identifier, password) {
+            try {
+                const response = await fetch('https://bsky.social/xrpc/com.atproto.server.createSession', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, password })
+                });
+                if (!response.ok) {
+                    throw new Error(`Bluesky session creation failed: ${response.statusText}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Bluesky session error:', error);
+                return null;
+            }
         }
 
         /**
-         * Renders the list of subscribed feed URLs.
+         * Posts a feed item to Bluesky.
+         * @param {string} text The content of the post.
+         * @param {string} accessJwt The access token for the session.
+         * @returns {Promise<boolean>} True if successful, false otherwise.
          */
-        function renderFeedUrls() {
-            feedUrlsList.innerHTML = feeds.map(url => `
-                <li class="flex items-center justify-between p-3 bg-gray-200 rounded-xl">
-                    <span class="text-sm text-gray-700 truncate">${url}</span>
-                    <button class="remove-feed-button bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1 px-2 rounded-full transition duration-300 ml-2" data-url="${url}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </li>
-            `).join('');
-
-            // Add event listeners for the remove buttons
-            document.querySelectorAll('.remove-feed-button').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const urlToRemove = event.target.closest('button').getAttribute('data-url');
-                    const urlIndex = feeds.indexOf(urlToRemove);
-                    if (urlIndex > -1) {
-                        feeds.splice(urlIndex, 1);
-                        localStorage.setItem('rssFeeds', JSON.stringify(feeds));
-                        renderFeedUrls();
-                        fetchAllFeeds();
-                    }
+        async function postToBluesky(text, accessJwt) {
+            try {
+                const response = await fetch('https://bsky.social/xrpc/com.atproto.repo.createRecord', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessJwt}`
+                    },
+                    body: JSON.stringify({
+                        repo: 'me', // 'me' is a special value that resolves to the authenticated user's DID
+                        collection: 'app.bsky.feed.post',
+                        record: {
+                            text,
+                            createdAt: new Date().toISOString(),
+                            $type: 'app.bsky.feed.post'
+                        }
+                    })
                 });
-            });
+                return response.ok;
+            } catch (error) {
+                console.error('Bluesky post error:', error);
+                return false;
+            }
         }
-
-        // --- Event Listeners and Initial Load ---
         
-        // Add a new feed to the list.
-        addFeedButton.addEventListener('click', () => {
-            const url = feedInput.value.trim();
-            if (url && !feeds.includes(url)) {
-                feeds.push(url);
-                localStorage.setItem('rssFeeds', JSON.stringify(feeds));
-                feedInput.value = ''; // Clear the input
-                renderFeedUrls();
-                fetchAllFeeds();
-            } else if (feeds.includes(url)) {
-                alert("This feed is already in your list!"); // Use a real message box in production
+        // --- Main Logic ---
+
+        testBtn.addEventListener('click', async () => {
+            const mastodonServer = mastodonServerInput.value.trim();
+            const mastodonToken = mastodonTokenInput.value.trim();
+            const blueskyIdentifier = blueskyIdentifierInput.value.trim();
+            const blueskyPassword = blueskyPasswordInput.value.trim();
+            const rssUrl = rssUrlInput.value.trim();
+
+            if (!mastodonServer && !blueskyIdentifier && !rssUrl) {
+                showMessage('Please enter at least one URL or credential to test.', 'bg-yellow-500 text-white');
+                return;
             }
-        });
 
-        // Open the share modal.
-        function openShareModal(title, link) {
-            currentArticle = { title, link };
-            modalTitle.textContent = title;
-            shareModal.classList.remove('hidden');
-            shareModal.classList.add('flex');
-        }
-
-        // Close the share modal.
-        closeModalBtn.addEventListener('click', () => {
-            shareModal.classList.remove('flex');
-            shareModal.classList.add('hidden');
-        });
-
-        // Simulate sharing to Mastodon.
-        shareMastodonBtn.addEventListener('click', () => {
-            if (currentArticle) {
-                const mastodonToken = document.getElementById('mastodon-token').value;
-                if (!mastodonToken) {
-                    alert('Please enter your Mastodon API token first.');
-                    return;
+            let mastodonSuccess = false;
+            if (mastodonServer && mastodonToken) {
+                showMessage('Testing Mastodon connection...', 'bg-blue-500 text-white');
+                // The most reliable way to test a Mastodon token is to try posting something.
+                // We'll post a private, unlisted status.
+                const testStatus = 'This is a test post from my RSS reader app.';
+                const response = await fetch(`${mastodonServer}/api/v1/statuses`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${mastodonToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        status: testStatus,
+                        visibility: 'unlisted' // Unlisted so it doesn't appear on public timelines
+                    })
+                });
+                if (response.ok) {
+                    mastodonSuccess = true;
+                    // Delete the test post to clean up
+                    const data = await response.json();
+                    if (data.id) {
+                        await fetch(`${mastodonServer}/api/v1/statuses/${data.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${mastodonToken}` }
+                        });
+                    }
                 }
-                
-                // --- THIS IS WHERE THE SECURE API CALLS WOULD GO ---
-                // For a real app, this would be a fetch call to your server with the token.
-                // Example:
-                // fetch('https://YOUR_SERVER/share-to-mastodon', {
-                //   method: 'POST',
-                //   headers: { 'Content-Type': 'application/json' },
-                //   body: JSON.stringify({ token: mastodonToken, status: `Reading: ${currentArticle.title} ${currentArticle.link}` })
-                // });
-                
-                // For now, we'll just show a confirmation.
-                alert(`Simulated: Article shared to Mastodon! Text: "${currentArticle.title} ${currentArticle.link}"`);
-                closeModalBtn.click(); // Close the modal
             }
-        });
 
-        // Simulate sharing to Bluesky.
-        shareBlueskyBtn.addEventListener('click', () => {
-            if (currentArticle) {
-                const blueskyPassword = document.getElementById('bluesky-password').value;
-                if (!blueskyPassword) {
-                    alert('Please enter your Bluesky app password first.');
-                    return;
+            let blueskySuccess = false;
+            if (blueskyIdentifier && blueskyPassword) {
+                showMessage('Testing Bluesky connection...', 'bg-blue-500 text-white');
+                const session = await createBlueskySession(blueskyIdentifier, blueskyPassword);
+                if (session && session.did) {
+                    blueskySuccess = true;
                 }
-                
-                // --- THIS IS WHERE THE SECURE API CALLS WOULD GO ---
-                // Similar to the Mastodon example, this would be a server-side call.
-                // The Bluesky API is more complex, requiring authentication and specific post formatting.
-                
-                alert(`Simulated: Article shared to Bluesky! Text: "${currentArticle.title} ${currentArticle.link}"`);
-                closeModalBtn.click(); // Close the modal
+            }
+
+            let rssSuccess = false;
+            if (rssUrl) {
+                showMessage('Testing RSS feed...', 'bg-blue-500 text-white');
+                const feed = await fetchRssFeed(rssUrl);
+                if (feed) {
+                    rssSuccess = true;
+                }
+            }
+
+            let messages = [];
+            if (mastodonServer && mastodonToken) {
+                messages.push(`Mastodon connection: ${mastodonSuccess ? 'SUCCESS' : 'FAILURE'}.`);
+            }
+            if (blueskyIdentifier && blueskyPassword) {
+                messages.push(`Bluesky connection: ${blueskySuccess ? 'SUCCESS' : 'FAILURE'}.`);
+            }
+            if (rssUrl) {
+                messages.push(`RSS feed check: ${rssSuccess ? 'SUCCESS' : 'FAILURE'}.`);
+            }
+
+            if (messages.length > 0) {
+                const combinedMessage = messages.join(' ');
+                const isOverallSuccess = messages.every(msg => msg.includes('SUCCESS'));
+                showMessage(combinedMessage, isOverallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
             }
         });
 
-        // Initial render and fetch
-        renderFeedUrls();
-        fetchAllFeeds();
+        postBtn.addEventListener('click', async () => {
+            const mastodonServer = mastodonServerInput.value.trim();
+            const mastodonToken = mastodonTokenInput.value.trim();
+            const blueskyIdentifier = blueskyIdentifierInput.value.trim();
+            const blueskyPassword = blueskyPasswordInput.value.trim();
+            const rssUrl = rssUrlInput.value.trim();
 
-        // Set up the automatic refresh every 3 hours (3 * 60 * 60 * 1000 milliseconds)
-        const REFRESH_INTERVAL = 3 * 60 * 60 * 1000;
-        setInterval(fetchAllFeeds, REFRESH_INTERVAL);
+            if (!rssUrl) {
+                showMessage('Please enter an RSS feed URL first.', 'bg-yellow-500 text-white');
+                return;
+            }
 
+            showMessage('Fetching RSS feed...', 'bg-yellow-500 text-white');
+            const feed = await fetchRssFeed(rssUrl);
+            if (!feed) return;
+
+            const items = feed.querySelectorAll('item');
+            if (items.length === 0) {
+                showMessage('No items found in RSS feed.', 'bg-yellow-500 text-white');
+                return;
+            }
+
+            const latestItem = items[0];
+            const title = latestItem.querySelector('title')?.textContent;
+            const link = latestItem.querySelector('link')?.textContent;
+            const description = latestItem.querySelector('description')?.textContent;
+
+            if (!title || !link) {
+                showMessage('Latest RSS item is missing a title or link.', 'bg-red-500 text-white');
+                return;
+            }
+
+            const postText = `New Post: ${title}\n\nRead more here: ${link}`;
+
+            let mastodonPosted = false;
+            if (mastodonServer && mastodonToken) {
+                showMessage('Posting to Mastodon...', 'bg-blue-500 text-white');
+                mastodonPosted = await postToMastodon(mastodonServer, mastodonToken, postText);
+            }
+
+            let blueskyPosted = false;
+            if (blueskyIdentifier && blueskyPassword) {
+                showMessage('Posting to Bluesky...', 'bg-blue-500 text-white');
+                const session = await createBlueskySession(blueskyIdentifier, blueskyPassword);
+                if (session && session.accessJwt) {
+                    blueskyPosted = await postToBluesky(postText, session.accessJwt);
+                }
+            }
+
+            let messages = [];
+            if (mastodonServer && mastodonToken) {
+                messages.push(`Mastodon post: ${mastodonPosted ? 'SUCCESS' : 'FAILURE'}.`);
+            }
+            if (blueskyIdentifier && blueskyPassword) {
+                messages.push(`Bluesky post: ${blueskyPosted ? 'SUCCESS' : 'FAILURE'}.`);
+            }
+
+            if (messages.length > 0) {
+                const combinedMessage = messages.join(' ');
+                const isOverallSuccess = messages.every(msg => msg.includes('SUCCESS'));
+                showMessage(combinedMessage, isOverallSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white');
+            } else {
+                showMessage('No social media accounts were configured.', 'bg-yellow-500 text-white');
+            }
+        });
     </script>
 </body>
 </html>
