@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .accounts-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .accounts-list::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* slate-300 */
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-2xl bg-white shadow-2xl rounded-2xl p-6 md:p-8">
+        <!-- Loading and Status Spinner -->
+        <div id="status-display" class="flex flex-col items-center justify-center text-center text-slate-800">
+            <div class="w-10 h-10 rounded-full border-4 border-t-4 border-sky-400 animate-spin mb-4"></div>
+            <p id="status-text" class="text-sm">Connecting to database...</p>
+        </div>
+
+        <!-- Main Content (will be hidden initially) -->
+        <div id="main-content" class="hidden">
+            <!-- Header and User ID -->
+            <div class="text-center mb-6">
+                <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800">Your Social Media Hub</h1>
+                <p class="text-slate-500 mt-2">Add and manage your important accounts and feeds.</p>
+                <div class="mt-4 text-xs text-slate-400">
+                    User ID: <span id="user-id" class="font-mono break-all"></span>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="flex justify-center border-b border-slate-200 mb-6">
+                <button id="accounts-tab" class="py-2 px-4 font-semibold text-sky-600 border-b-2 border-sky-600">
+                    Social Accounts
+                </button>
+                <button id="rss-tab" class="py-2 px-4 font-semibold text-slate-500 hover:text-slate-700">
+                    RSS Feeds
+                </button>
+            </div>
+
+            <!-- Content for Social Accounts Tab -->
+            <div id="accounts-content">
+                <div class="bg-slate-100 p-4 rounded-xl mb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-4">Add a New Account</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input id="platformInput" type="text" placeholder="Platform (e.g., Mastodon)"
+                            class="flex-1 p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700">
+                        <input id="linkInput" type="url" placeholder="Link (e.g., https://mastodon.social/@user)"
+                            class="flex-1 p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700">
+                        <button id="add-account-btn"
+                            class="bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-sky-700 transition-all duration-300 transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-500">
+                            Add Account
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-700 mb-4">Your Social Accounts</h2>
+                    <ul id="social-accounts-list" class="accounts-list max-h-80 overflow-y-auto pr-2">
+                        <!-- Social accounts will be rendered here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Content for RSS Feeds Tab -->
+            <div id="rss-content" class="hidden">
+                <div class="bg-slate-100 p-4 rounded-xl mb-6">
+                    <h2 class="text-xl font-bold text-slate-700 mb-4">Add a New RSS Feed</h2>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <input id="rssUrlInput" type="url" placeholder="RSS Feed URL (e.g., https://example.com/feed)"
+                            class="flex-1 p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700">
+                        <button id="add-feed-btn"
+                            class="bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-sky-700 transition-all duration-300 transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                            Add Feed
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-700 mb-4">Your RSS Feeds</h2>
+                    <ul id="rss-feeds-list" class="accounts-list max-h-80 overflow-y-auto pr-2">
+                        <!-- RSS feeds will be rendered here -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Message Box -->
+            <div id="message-box" class="mt-4 text-center text-sm font-medium hidden"></div>
+
+            <!-- Modal for Bio Generation -->
+            <div id="bio-modal" class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center p-4 hidden">
+                <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-2xl font-bold text-slate-800">✨ Generate Profile Bio</h3>
+                        <button id="close-modal-btn" class="text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-slate-600 mb-4">Enter some keywords or a short description to generate a new bio for your <span id="modal-platform" class="font-bold"></span> profile.</p>
+                    <textarea id="bio-prompt-input" rows="3" placeholder="e.g., 'Software developer who loves hiking and photography'"
+                        class="w-full p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-700 mb-4"></textarea>
+
+                    <button id="generate-bio-btn"
+                        class="w-full bg-sky-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-sky-700 transition-all duration-300 transform active:scale-95 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                        Generate Bio
+                    </button>
+                    
+                    <div id="bio-output-loading" class="text-center mt-4 hidden">
+                        <div class="w-8 h-8 rounded-full border-4 border-t-4 border-sky-400 animate-spin inline-block"></div>
+                        <p class="text-sm text-slate-500 mt-2">Generating your bio...</p>
+                    </div>
+                    <div id="bio-output-section" class="mt-4 hidden">
+                        <p class="text-sm font-semibold text-slate-700 mb-2">Generated Bio:</p>
+                        <textarea id="bio-output-text" rows="5" readonly
+                            class="w-full p-3 rounded-lg border border-slate-300 bg-slate-50 text-slate-700 resize-none"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        // The Firebase configuration is automatically provided by the environment.
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, addDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // UI Elements
+        const statusDisplay = document.getElementById('status-display');
+        const statusText = document.getElementById('status-text');
+        const mainContent = document.getElementById('main-content');
+        const userIdDisplay = document.getElementById('user-id');
+        const accountsTab = document.getElementById('accounts-tab');
+        const rssTab = document.getElementById('rss-tab');
+        const accountsContent = document.getElementById('accounts-content');
+        const rssContent = document.getElementById('rss-content');
+        const platformInput = document.getElementById('platformInput');
+        const linkInput = document.getElementById('linkInput');
+        const addAccountBtn = document.getElementById('add-account-btn');
+        const socialAccountsList = document.getElementById('social-accounts-list');
+        const rssUrlInput = document.getElementById('rssUrlInput');
+        const addFeedBtn = document.getElementById('add-feed-btn');
+        const rssFeedsList = document.getElementById('rss-feeds-list');
+        const messageBox = document.getElementById('message-box');
+
+        // New Gemini API UI elements
+        const bioModal = document.getElementById('bio-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const modalPlatform = document.getElementById('modal-platform');
+        const bioPromptInput = document.getElementById('bio-prompt-input');
+        const generateBioBtn = document.getElementById('generate-bio-btn');
+        const bioOutputLoading = document.getElementById('bio-output-loading');
+        const bioOutputSection = document.getElementById('bio-output-section');
+        const bioOutputText = document.getElementById('bio-output-text');
+
+        let db, auth, userId;
+        let isAuthReady = false;
+
+        // Function to display a temporary message
+        const showMessage = (text, type = 'error') => {
+            messageBox.textContent = text;
+            messageBox.className = `mt-4 text-center text-sm font-medium block ${type === 'error' ? 'text-red-500' : 'text-green-500'}`;
+            setTimeout(() => {
+                messageBox.textContent = '';
+                messageBox.className = 'hidden';
+            }, 3000);
+        };
+
+        // Initialize Firebase and Auth
+        const initializeFirebase = async () => {
+            if (!firebaseConfig || !firebaseConfig.projectId) {
+                statusText.textContent = "Error: Firebase configuration not found.";
+                statusDisplay.classList.remove('animate-spin');
+                return;
+            }
+
+            try {
+                const app = initializeApp(firebaseConfig, 'social-media-aggregator-' + appId);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // This listener ensures we only proceed once auth is ready
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        statusText.textContent = "Connected!";
+                        statusDisplay.classList.add('hidden');
+                        mainContent.classList.remove('hidden');
+                        isAuthReady = true;
+                        setupFirestoreListeners();
+                    } else {
+                        // This case handles initial state before sign-in is complete
+                        statusText.textContent = "Authenticating...";
+                        isAuthReady = false;
+                    }
+                });
+
+                // Attempt to sign in with custom token, then anonymously if none is provided
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+            } catch (e) {
+                statusText.textContent = "Error: Failed to connect to database. Please refresh.";
+                statusDisplay.querySelector('div').classList.remove('animate-spin');
+                console.error("Firebase initialization failed:", e);
+            }
+        };
+
+        // Set up real-time listeners for Firestore data after auth is ready
+        const setupFirestoreListeners = () => {
+            if (!isAuthReady || !db) return;
+
+            // Social Accounts Listener
+            onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/social-accounts`), (snapshot) => {
+                const accounts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderSocialAccounts(accounts);
+            }, (error) => {
+                console.error("Error fetching social accounts: ", error);
+                showMessage("Failed to load social accounts.", 'error');
+            });
+
+            // RSS Feeds Listener
+            onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/rss-feeds`), (snapshot) => {
+                const feeds = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderRssFeeds(feeds);
+            }, (error) => {
+                console.error("Error fetching RSS feeds: ", error);
+                showMessage("Failed to load RSS feeds.", 'error');
+            });
+        };
+
+        // --- Gemini API Call Function ---
+        const generateBio = async (platform, prompt) => {
+            if (!prompt) {
+                showMessage("Please enter a few keywords to generate a bio.", 'error');
+                return;
+            }
+            bioOutputLoading.classList.remove('hidden');
+            bioOutputSection.classList.add('hidden');
+            
+            let chatHistory = [];
+            const userPrompt = `Generate a creative and engaging profile bio for a ${platform} account. The bio should be based on these keywords/ideas: "${prompt}". Make it concise and suitable for a social media profile.`;
+            chatHistory.push({ role: "user", parts: [{ text: userPrompt }] });
+
+            const payload = {
+                contents: chatHistory,
+                generationConfig: {
+                    temperature: 0.7,
+                    topP: 1,
+                    topK: 1
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
+            let retries = 0;
+            const maxRetries = 5;
+            let success = false;
+            let responseText = "Failed to generate bio. Please try again.";
+
+            while (retries < maxRetries && !success) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API call failed with status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        responseText = result.candidates[0].content.parts[0].text;
+                        success = true;
+                    } else {
+                        throw new Error("Invalid API response structure");
+                    }
+                } catch (e) {
+                    console.error("Error generating bio:", e);
+                    retries++;
+                    if (retries < maxRetries) {
+                        const delay = Math.pow(2, retries) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
+            }
+
+            bioOutputLoading.classList.add('hidden');
+            bioOutputSection.classList.remove('hidden');
+            bioOutputText.value = responseText;
+        };
+
+        // Render functions for the UI
+        const renderSocialAccounts = (accounts) => {
+            socialAccountsList.innerHTML = '';
+            if (accounts.length === 0) {
+                socialAccountsList.innerHTML = `<li class="text-center text-slate-500 py-8">No social accounts added yet.</li>`;
+                return;
+            }
+            accounts.forEach(account => {
+                const li = document.createElement('li');
+                li.className = "flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-md mb-4 transition-transform transform hover:scale-[1.01]";
+                li.innerHTML = `
+                    <div class="flex-1 min-w-0 mb-2 sm:mb-0">
+                        <p class="font-semibold text-slate-800 text-lg leading-tight truncate">${account.platform}</p>
+                        <a href="${account.link}" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:underline text-sm truncate block mt-1">${account.link}</a>
+                    </div>
+                    <div class="flex gap-2 mt-2 sm:mt-0">
+                        <button class="generate-bio-btn bg-sky-600 text-white font-medium py-2 px-4 rounded-full shadow-lg hover:bg-sky-700 transition-colors duration-300 transform active:scale-95 flex-shrink-0">
+                            ✨ Generate Bio
+                        </button>
+                        <button class="remove-btn bg-red-600 text-white font-medium py-2 px-4 rounded-full shadow-lg hover:bg-red-700 transition-colors duration-300 transform active:scale-95 flex-shrink-0">
+                            Remove
+                        </button>
+                    </div>
+                `;
+                li.querySelector('.remove-btn').addEventListener('click', () => handleRemoveSocialAccount(account.id));
+                li.querySelector('.generate-bio-btn').addEventListener('click', () => {
+                    modalPlatform.textContent = account.platform;
+                    bioModal.classList.remove('hidden');
+                });
+                socialAccountsList.appendChild(li);
+            });
+        };
+
+        const renderRssFeeds = (feeds) => {
+            rssFeedsList.innerHTML = '';
+            if (feeds.length === 0) {
+                rssFeedsList.innerHTML = `<li class="text-center text-slate-500 py-8">No RSS feeds added yet.</li>`;
+                return;
+            }
+            feeds.forEach(feed => {
+                const li = document.createElement('li');
+                li.className = "flex flex-col sm:flex-row items-center justify-between bg-white p-4 rounded-xl shadow-md mb-4 transition-transform transform hover:scale-[1.01]";
+                li.innerHTML = `
+                    <div class="flex-1 min-w-0 mb-2 sm:mb-0">
+                        <p class="font-semibold text-slate-800 text-lg leading-tight truncate">RSS Feed</p>
+                        <a href="${feed.url}" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:underline text-sm truncate block mt-1">${feed.url}</a>
+                    </div>
+                    <button class="remove-btn bg-red-600 text-white font-medium py-2 px-4 rounded-full shadow-lg hover:bg-red-700 transition-colors duration-300 transform active:scale-95 flex-shrink-0 mt-2 sm:mt-0">
+                        Remove
+                    </button>
+                `;
+                li.querySelector('.remove-btn').addEventListener('click', () => handleRemoveRssFeed(feed.id));
+                rssFeedsList.appendChild(li);
+            });
+        };
+        
+        // Handlers
+        const handleAddSocialAccount = async () => {
+            if (!isAuthReady) {
+                showMessage('The database is not yet connected. Please wait a moment.');
+                return;
+            }
+            const platform = platformInput.value.trim();
+            const link = linkInput.value.trim();
+            if (!platform || !link) {
+                showMessage('Please fill in both fields.');
+                return;
+            }
+            try {
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/social-accounts`), {
+                    platform,
+                    link,
+                    createdAt: serverTimestamp()
+                });
+                showMessage('Social account added! 🎉', 'success');
+                platformInput.value = '';
+                linkInput.value = '';
+            } catch (e) {
+                showMessage('Error adding account: ' + e.message);
+            }
+        };
+
+        const handleRemoveSocialAccount = async (id) => {
+            if (!isAuthReady) {
+                showMessage('The database is not yet connected. Please wait a moment.');
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/social-accounts`, id));
+                showMessage('Social account removed! 🗑️', 'success');
+            } catch (e) {
+                showMessage('Error removing account: ' + e.message);
+            }
+        };
+
+        const handleAddRssFeed = async () => {
+            if (!isAuthReady) {
+                showMessage('The database is not yet connected. Please wait a moment.');
+                return;
+            }
+            const rssUrl = rssUrlInput.value.trim();
+            if (!rssUrl) {
+                showMessage('Please enter an RSS feed URL.');
+                return;
+            }
+            try {
+                new URL(rssUrl); // Validate URL format
+                await addDoc(collection(db, `artifacts/${appId}/users/${userId}/rss-feeds`), {
+                    url: rssUrl,
+                    lastFetched: null,
+                    createdAt: serverTimestamp()
+                });
+                showMessage('RSS feed added! 🗞️', 'success');
+                rssUrlInput.value = '';
+            } catch (e) {
+                showMessage('Please enter a valid URL.');
+            }
+        };
+
+        const handleRemoveRssFeed = async (id) => {
+            if (!isAuthReady) {
+                showMessage('The database is not yet connected. Please wait a moment.');
+                return;
+            }
+            try {
+                await deleteDoc(doc(db, `artifacts/${appId}/users/${userId}/rss-feeds`, id));
+                showMessage('RSS feed removed! 🗑️', 'success');
+            } catch (e) {
+                showMessage('Error removing RSS feed: ' + e.message);
+            }
+        };
+
+        // Event Listeners for UI
+        accountsTab.addEventListener('click', () => {
+            accountsTab.classList.add('text-sky-600', 'border-b-2', 'border-sky-600');
+            accountsTab.classList.remove('text-slate-500', 'hover:text-slate-700');
+            rssTab.classList.remove('text-sky-600', 'border-b-2', 'border-sky-600');
+            rssTab.classList.add('text-slate-500', 'hover:text-slate-700');
+            accountsContent.classList.remove('hidden');
+            rssContent.classList.add('hidden');
+        });
+
+        rssTab.addEventListener('click', () => {
+            rssTab.classList.add('text-sky-600', 'border-b-2', 'border-sky-600');
+            rssTab.classList.remove('text-slate-500', 'hover:text-slate-700');
+            accountsTab.classList.remove('text-sky-600', 'border-b-2', 'border-sky-600');
+            accountsTab.classList.add('text-slate-500', 'hover:text-slate-700');
+            rssContent.classList.remove('hidden');
+            accountsContent.classList.add('hidden');
+        });
+
+        addAccountBtn.addEventListener('click', handleAddSocialAccount);
+        addFeedBtn.addEventListener('click', handleAddRssFeed);
+
+        platformInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAddSocialAccount(); });
+        linkInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAddSocialAccount(); });
+        rssUrlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAddRssFeed(); });
+
+        // Event listeners for the new bio modal
+        closeModalBtn.addEventListener('click', () => {
+            bioModal.classList.add('hidden');
+            bioPromptInput.value = '';
+            bioOutputSection.classList.add('hidden');
+        });
+
+        generateBioBtn.addEventListener('click', () => {
+            const platform = modalPlatform.textContent;
+            const prompt = bioPromptInput.value.trim();
+            generateBio(platform, prompt);
+        });
+
+        // Start the application
+        initializeFirebase();
+    </script>
+</body>
+</html>
