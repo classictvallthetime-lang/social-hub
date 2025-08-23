@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -8,22 +7,20 @@
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
         .btn-loading {
             background-color: #6B7280;
             cursor: not-allowed;
             animation: pulse 1.5s infinite;
         }
         @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: .5;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
         }
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal">
@@ -83,11 +80,6 @@
                     <div class="relative">
                         <input type="url" id="rss-url-1" placeholder="Enter RSS Feed URL" required
                                class="w-full p-3 pr-10 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                        </span>
                     </div>
                 </div>
                 <button id="add-rss-feed-btn" class="w-full py-3 bg-gray-200 text-gray-600 rounded-xl font-semibold hover:bg-gray-300 transition-colors duration-200">
@@ -123,7 +115,428 @@
         </div>
     </div>
     
-    <!-- Link to the external JavaScript file -->
-    <script type="module" src="./script.js"></script>
+    <script type="module">
+        // Firebase modules are imported to connect to the database.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            let rssFeedCount = 1;
+            const rssFieldsContainer = document.getElementById('rss-fields-container');
+            const addRssFeedBtn = document.getElementById('add-rss-feed-btn');
+            const saveDataBtn = document.getElementById('save-data-btn');
+            const testConnectionBtn = document.getElementById('test-connection-btn');
+            const fetchFeedsBtn = document.getElementById('fetch-feeds-btn');
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            const fetchedContentContainer = document.getElementById('fetched-content');
+            const feedsContainer = document.getElementById('feeds-container');
+            const postFeedsBtn = document.getElementById('post-feeds-btn');
+            
+            let fetchedPosts = [];
+
+            // --- USER FEEDBACK FUNCTIONS ---
+
+            /**
+             * Displays a message in the message box at the top of the app.
+             * @param {string} message The message to display.
+             * @param {string} type The type of message ('success', 'error', 'info').
+             */
+            function showMessage(message, type = 'info') {
+                messageText.textContent = message;
+                messageBox.className = `text-center p-4 rounded-xl font-medium mb-8`;
+                
+                if (type === 'success') {
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                } else if (type === 'error') {
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                } else {
+                    messageBox.classList.add('bg-blue-100', 'text-blue-700');
+                }
+                
+                setTimeout(() => {
+                    messageText.textContent = '';
+                    messageBox.className = `text-center p-4 rounded-xl font-medium mb-8`;
+                }, 4000);
+            }
+
+            /**
+             * Sets a button's state to loading.
+             * @param {HTMLElement} button The button to update.
+             */
+            function setLoadingState(button) {
+                button.disabled = true;
+                button.classList.add('btn-loading');
+            }
+
+            /**
+             * Resets a button's state from loading.
+             * @param {HTMLElement} button The button to update.
+             */
+            function resetLoadingState(button) {
+                button.disabled = false;
+                button.classList.remove('btn-loading');
+            }
+
+            /**
+             * Updates the state of the save data button based on authentication status.
+             * @param {boolean} isReady True if Firebase is ready, false otherwise.
+             */
+            function updateSaveButtonState(isReady) {
+                if (isReady) {
+                    saveDataBtn.disabled = false;
+                    saveDataBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700', 'focus:ring-4', 'focus:ring-gray-500', 'focus:ring-opacity-50');
+                    saveDataBtn.classList.remove('btn-loading');
+                    saveDataBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                } else {
+                    saveDataBtn.disabled = true;
+                    saveDataBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    saveDataBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700', 'focus:ring-4', 'focus:ring-gray-500', 'focus:ring-opacity-50');
+                }
+            }
+
+            // --- FIREBASE SETUP ---
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            
+            let db, auth, userId;
+            let isAuthReady = false;
+
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                updateSaveButtonState(false);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        console.log("Firebase Auth is ready. User ID:", userId);
+                        updateSaveButtonState(true);
+                        loadData();
+                    } else {
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Firebase auth error:", error);
+                            showMessage('Authentication failed. Cannot save data.', 'error');
+                            updateSaveButtonState(false);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase configuration error:", error);
+                showMessage('Firebase is not configured. Data cannot be saved permanently.', 'error');
+                updateSaveButtonState(false);
+            }
+
+            // --- DATABASE FUNCTIONS ---
+
+            async function saveDataToDb() {
+                if (!isAuthReady || !userId) {
+                    showMessage('App is not ready. Please wait a moment.', 'error');
+                    return;
+                }
+
+                setLoadingState(saveDataBtn);
+                showMessage('Saving data...', 'info');
+
+                try {
+                    const data = {
+                        mastodonServer: document.getElementById('mastodon-server').value,
+                        mastodonAccessToken: document.getElementById('mastodon-access-token').value,
+                        blueskyUsername: document.getElementById('bluesky-username').value,
+                        blueskyAppPassword: document.getElementById('bluesky-app-password').value,
+                        rssUrls: []
+                    };
+                    const rssInputs = document.querySelectorAll('#rss-fields-container input[type="url"]');
+                    rssInputs.forEach(input => {
+                        if (input.value) {
+                            data.rssUrls.push(input.value);
+                        }
+                    });
+
+                    const docPath = `/artifacts/${appId}/users/${userId}/social-feeds-data`;
+                    const docRef = doc(db, docPath);
+
+                    await setDoc(docRef, data);
+                    console.log('Data saved to Firestore.');
+                    showMessage('Data saved to the cloud!', 'success');
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    showMessage('Error saving data. Please try again.', 'error');
+                } finally {
+                    resetLoadingState(saveDataBtn);
+                }
+            }
+
+            function loadData() {
+                if (!isAuthReady || !userId) {
+                    return;
+                }
+                const docPath = `/artifacts/${appId}/users/${userId}/social-feeds-data`;
+                const docRef = doc(db, docPath);
+
+                onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        document.getElementById('mastodon-server').value = data.mastodonServer || '';
+                        document.getElementById('bluesky-username').value = data.blueskyUsername || '';
+                        
+                        document.getElementById('mastodon-access-token').value = '';
+                        document.getElementById('bluesky-app-password').value = '';
+
+                        rssFieldsContainer.innerHTML = '';
+                        if (Array.isArray(data.rssUrls) && data.rssUrls.length > 0) {
+                            data.rssUrls.forEach((url, index) => {
+                                const newField = document.createElement('div');
+                                newField.className = 'relative';
+                                newField.innerHTML = `
+                                    <input type="url" id="rss-url-${index + 1}" placeholder="Enter RSS Feed URL" value="${url}" required
+                                             class="w-full p-3 pr-10 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                `;
+                                rssFieldsContainer.appendChild(newField);
+                                rssFeedCount = index + 1;
+                            });
+                        } else {
+                                const defaultField = document.createElement('div');
+                                defaultField.className = 'relative';
+                                defaultField.innerHTML = `
+                                    <input type="url" id="rss-url-1" placeholder="Enter RSS Feed URL" required
+                                             class="w-full p-3 pr-10 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                                `;
+                                rssFieldsContainer.appendChild(defaultField);
+                                rssFeedCount = 1;
+                        }
+                        console.log('Data loaded from Firestore.');
+                        showMessage('Ready! You can now save your data.', 'success');
+                    } else {
+                        console.log("No data found in Firestore.");
+                        showMessage('No saved data found. You can now save.', 'info');
+                    }
+                }, (error) => {
+                    console.error("Error listening to data changes: ", error);
+                    showMessage('Failed to retrieve data from the cloud. Please check your connection.', 'error');
+                });
+            }
+
+            async function postFeedsToApi() {
+                setLoadingState(postFeedsBtn);
+                showMessage('Posting to social feeds...', 'info');
+
+                const mastodonServer = document.getElementById('mastodon-server').value;
+                const mastodonAccessToken = document.getElementById('mastodon-access-token').value;
+                const blueskyUsername = document.getElementById('bluesky-username').value;
+                const blueskyAppPassword = document.getElementById('bluesky-app-password').value;
+                
+                if (fetchedPosts.length === 0) {
+                    showMessage('No posts to send. Please fetch feeds first.', 'error');
+                    resetLoadingState(postFeedsBtn);
+                    return;
+                }
+
+                const payload = {
+                    mastodon: {
+                        server: mastodonServer,
+                        accessToken: mastodonAccessToken
+                    },
+                    bluesky: {
+                        username: blueskyUsername,
+                        appPassword: blueskyAppPassword
+                    },
+                    feeds: fetchedPosts
+                };
+
+                try {
+                    const response = await fetch('YOUR_BACKEND_ENDPOINT', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        showMessage('Successfully posted to social feeds!', 'success');
+                        console.log('API response:', result);
+                    } else {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to post to social feeds.');
+                    }
+                } catch (error) {
+                    console.error('Error posting to API:', error);
+                    showMessage(`Posting failed: ${error.message}`, 'error');
+                } finally {
+                    resetLoadingState(postFeedsBtn);
+                }
+            }
+            
+            async function fetchAndParseRSS(url) {
+                try {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    const text = await response.text();
+                    
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(text, 'text/xml');
+                    
+                    if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                        throw new Error('Failed to parse XML from the RSS feed.');
+                    }
+
+                    const feedTitle = xmlDoc.querySelector('channel > title')?.textContent || 'Untitled Feed';
+                    const items = xmlDoc.querySelectorAll('item');
+                    const posts = [];
+                    items.forEach(item => {
+                        const title = item.querySelector('title')?.textContent || 'Untitled Post';
+                        const link = item.querySelector('link')?.textContent || '#';
+                        const pubDate = item.querySelector('pubDate')?.textContent || 'No date';
+                        posts.push({ title, link, pubDate });
+                    });
+
+                    return { title: feedTitle, posts: posts };
+
+                } catch (error) {
+                    console.error('Error fetching or parsing RSS feed:', error);
+                    return { error: `Could not fetch feed: ${error.message}` };
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+
+            addRssFeedBtn.addEventListener('click', () => {
+                rssFeedCount++;
+                const newField = document.createElement('div');
+                newField.className = 'relative';
+                newField.innerHTML = `
+                    <input type="url" id="rss-url-${rssFeedCount}" placeholder="Enter RSS Feed URL" required
+                             class="w-full p-3 pr-10 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                `;
+                rssFieldsContainer.appendChild(newField);
+            });
+
+            saveDataBtn.addEventListener('click', saveDataToDb);
+
+            testConnectionBtn.addEventListener('click', async () => {
+                setLoadingState(testConnectionBtn);
+                showMessage('Testing connections...', 'info');
+
+                const mastodonServer = document.getElementById('mastodon-server').value;
+                const blueskyUsername = document.getElementById('bluesky-username').value;
+                let allSuccess = true;
+
+                if (mastodonServer) {
+                    try {
+                        const response = await fetch(`https://${mastodonServer}/api/v1/instance`);
+                        if (response.ok) {
+                            showMessage('Mastodon connection successful!', 'success');
+                        } else {
+                            throw new Error('Server not reachable or invalid instance.');
+                        }
+                    } catch (e) {
+                        showMessage(`Mastodon connection failed: ${e.message}. Please check the server URL.`, 'error');
+                        allSuccess = false;
+                    }
+                } else {
+                    showMessage('Mastodon server URL is empty. Skipping test.', 'info');
+                }
+
+                if (blueskyUsername) {
+                    try {
+                        const response = await fetch(`https://bsky.social/xrpc/com.atproto.server.describeServer`);
+                        if (response.ok) {
+                            showMessage('Bluesky server is reachable!', 'success');
+                        } else {
+                            throw new Error('Server not reachable.');
+                        }
+                    } catch (e) {
+                        showMessage('Bluesky connection failed. Please check the username.', 'error');
+                        allSuccess = false;
+                    }
+                } else {
+                    showMessage('Bluesky username is empty. Skipping test.', 'info');
+                }
+
+                if (allSuccess) {
+                    showMessage('All connections tested successfully!', 'success');
+                }
+
+                resetLoadingState(testConnectionBtn);
+            });
+            
+            fetchFeedsBtn.addEventListener('click', async () => {
+                setLoadingState(fetchFeedsBtn);
+                showMessage('Fetching feeds...', 'info');
+                
+                const rssInputs = document.querySelectorAll('#rss-fields-container input[type="url"]');
+                const urls = Array.from(rssInputs).map(input => input.value).filter(url => url);
+                
+                if (urls.length === 0) {
+                    showMessage('Please add at least one RSS feed URL.', 'error');
+                    resetLoadingState(fetchFeedsBtn);
+                    postFeedsBtn.classList.add('hidden');
+                    return;
+                }
+
+                const fetchPromises = urls.map(url => fetchAndParseRSS(url));
+                const results = await Promise.all(fetchPromises);
+                
+                fetchedPosts = [];
+
+                feedsContainer.innerHTML = '';
+                fetchedContentContainer.classList.remove('hidden');
+
+                results.forEach(result => {
+                    if (result.error) {
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'p-4 rounded-xl bg-red-100 text-red-700 font-medium';
+                        errorDiv.textContent = result.error;
+                        feedsContainer.appendChild(errorDiv);
+                    } else {
+                        const feedDiv = document.createElement('div');
+                        feedDiv.className = 'p-6 bg-white rounded-2xl shadow-md border border-gray-200';
+                        
+                        fetchedPosts.push(...result.posts.slice(0, 5));
+                        
+                        let postsHtml = result.posts.slice(0, 5).map(post => `
+                            <li>
+                                <a href="${post.link}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-medium">${post.title}</a>
+                                <p class="text-gray-500 text-sm">${new Date(post.pubDate).toLocaleString()}</p>
+                            </li>
+                        `).join('');
+
+                        feedDiv.innerHTML = `
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">${result.title}</h3>
+                            <ul class="list-disc list-inside space-y-2">
+                                ${postsHtml || '<li>No posts found.</li>'}
+                            </ul>
+                        `;
+                        feedsContainer.appendChild(feedDiv);
+                    }
+                });
+
+                showMessage('Feeds fetched successfully!', 'success');
+                resetLoadingState(fetchFeedsBtn);
+                postFeedsBtn.classList.remove('hidden');
+            });
+            
+            postFeedsBtn.addEventListener('click', postFeedsToApi);
+        });
+    </script>
 </body>
 </html>
