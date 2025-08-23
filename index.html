@@ -228,6 +228,9 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
+
+                // Show a clear message while connecting
+                showMessage('Connecting to the database... Please wait.', 'info');
                 updateSaveButtonState(false); // Initially disable the button
 
                 // Wait for the authentication state to be ready
@@ -263,8 +266,7 @@
 
             // Saves the user's data to Firestore
             async function saveDataToDb() {
-                // The button is disabled until ready, so this check is no longer strictly necessary,
-                // but is good practice.
+                // Now that the button is disabled until ready, this check is redundant but kept for safety
                 if (!isAuthReady) {
                     showMessage('App is not ready. Please wait a moment.', 'info');
                     return;
@@ -354,14 +356,14 @@
                             rssFeedCount = 1;
                         }
                         console.log('Data loaded from Firestore.');
-                        showMessage('Data loaded!', 'success');
+                        showMessage('Ready! You can now save your data.', 'success');
                     } else {
                         console.log("No data found in Firestore.");
-                        showMessage('No saved data found.', 'info');
+                        showMessage('No saved data found. You can now save.', 'info');
                     }
                 }, (error) => {
                     console.error("Error listening to data changes: ", error);
-                    showMessage('Failed to retrieve data from the cloud.', 'error');
+                    showMessage('Failed to retrieve data from the cloud. Please check your connection.', 'error');
                 });
             }
 
