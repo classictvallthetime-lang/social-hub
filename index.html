@@ -267,8 +267,8 @@
             // Saves the user's data to Firestore
             async function saveDataToDb() {
                 // Now that the button is disabled until ready, this check is redundant but kept for safety
-                if (!isAuthReady) {
-                    showMessage('App is not ready. Please wait a moment.', 'info');
+                if (!isAuthReady || !userId) {
+                    showMessage('App is not ready. Please wait a moment.', 'error');
                     return;
                 }
 
@@ -308,7 +308,7 @@
 
             // Listens for real-time changes to the data from Firestore
             function loadData() {
-                if (!isAuthReady) {
+                if (!isAuthReady || !userId) {
                     return;
                 }
                 const docPath = `/artifacts/${appId}/users/${userId}/social-feeds-data`;
