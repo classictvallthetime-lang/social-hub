@@ -106,8 +106,8 @@
                         class="flex-1 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition-all focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
                     Set Up
                 </button>
-                <button type="button" id="save-data-btn"
-                        class="flex-1 px-6 py-3 bg-gray-600 text-white font-bold rounded-xl shadow-md hover:bg-gray-700 transition-all focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-opacity-50">
+                <button type="button" id="save-data-btn" disabled
+                        class="flex-1 px-6 py-3 bg-gray-400 text-white font-bold rounded-xl shadow-md cursor-not-allowed">
                     <span class="btn-text">Save Data</span>
                     <span class="btn-loading-text"><div class="spinner"></div> Saving...</span>
                 </button>
@@ -197,6 +197,22 @@
                 button.classList.remove('btn-loading');
             }
 
+            /**
+             * Updates the state of the save data button based on authentication status.
+             * @param {boolean} isReady True if Firebase is ready, false otherwise.
+             */
+            function updateSaveButtonState(isReady) {
+                if (isReady) {
+                    saveDataBtn.disabled = false;
+                    saveDataBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    saveDataBtn.classList.add('bg-gray-600', 'hover:bg-gray-700', 'focus:ring-4', 'focus:ring-gray-500', 'focus:ring-opacity-50');
+                } else {
+                    saveDataBtn.disabled = true;
+                    saveDataBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    saveDataBtn.classList.remove('bg-gray-600', 'hover:bg-gray-700', 'focus:ring-4', 'focus:ring-gray-500', 'focus:ring-opacity-50');
+                }
+            }
+
             // --- FIREBASE SETUP ---
 
             // The Canvas environment provides these global variables
@@ -212,6 +228,7 @@
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
+                updateSaveButtonState(false); // Initially disable the button
 
                 // Wait for the authentication state to be ready
                 onAuthStateChanged(auth, async (user) => {
@@ -219,6 +236,7 @@
                         userId = user.uid;
                         isAuthReady = true;
                         console.log("Firebase Auth is ready. User ID:", userId);
+                        updateSaveButtonState(true); // Enable the button
                         loadData(); // Load data from the database after auth
                     } else {
                         // Sign in with the custom token or anonymously if the token is not available
@@ -231,18 +249,22 @@
                         } catch (error) {
                             console.error("Firebase auth error:", error);
                             showMessage('Authentication failed. Cannot save data.', 'error');
+                            updateSaveButtonState(false); // Keep the button disabled on failure
                         }
                     }
                 });
             } else {
                 console.error("Firebase config is not available.");
                 showMessage('Firebase is not configured. Data cannot be saved permanently.', 'error');
+                updateSaveButtonState(false); // Keep the button disabled
             }
 
             // --- DATABASE FUNCTIONS ---
 
             // Saves the user's data to Firestore
             async function saveDataToDb() {
+                // The button is disabled until ready, so this check is no longer strictly necessary,
+                // but is good practice.
                 if (!isAuthReady) {
                     showMessage('App is not ready. Please wait a moment.', 'info');
                     return;
