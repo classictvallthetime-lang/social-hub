@@ -223,16 +223,16 @@
             let db, auth, userId;
             let isAuthReady = false;
 
-            // Initialize Firebase and set up authentication
-            if (firebaseConfig) {
+            // This is the crucial change. We now wait for the onAuthStateChanged listener to
+            // handle all messages about connection status. This is the most reliable method
+            // because it waits for the async authentication to complete.
+            try {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Show a clear message while connecting
-                showMessage('Connecting to the database... Please wait.', 'info');
                 updateSaveButtonState(false); // Initially disable the button
-
+                
                 // Wait for the authentication state to be ready
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
@@ -256,11 +256,14 @@
                         }
                     }
                 });
-            } else {
-                console.error("Firebase config is not available.");
+            } catch (error) {
+                // This catch block will only be triggered if the firebaseConfig is truly invalid
+                // or unavailable after the environment has had a chance to provide it.
+                console.error("Firebase configuration error:", error);
                 showMessage('Firebase is not configured. Data cannot be saved permanently.', 'error');
                 updateSaveButtonState(false); // Keep the button disabled
             }
+
 
             // --- DATABASE FUNCTIONS ---
 
