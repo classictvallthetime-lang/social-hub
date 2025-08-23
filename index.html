@@ -57,7 +57,7 @@
         </div>
 
         <!-- Form for user input -->
-        <form id="social-feed-form" class="space-y-6">
+        <div id="social-feed-form" class="space-y-6">
 
             <!-- RSS Feed section -->
             <div class="space-y-4 p-6 bg-gray-50 rounded-2xl border border-gray-100">
@@ -102,10 +102,6 @@
 
             <!-- Action buttons -->
             <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <button type="submit"
-                        class="flex-1 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-md hover:bg-blue-700 transition-all focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50">
-                    Set Up
-                </button>
                 <button type="button" id="save-data-btn" disabled
                         class="flex-1 px-6 py-3 bg-gray-400 text-white font-bold rounded-xl shadow-md cursor-not-allowed">
                     <span class="btn-text">Save Data</span>
@@ -122,7 +118,7 @@
                     <span class="btn-loading-text"><div class="spinner"></div> Fetching...</span>
                 </button>
             </div>
-        </form>
+        </div>
 
         <!-- Container for fetched RSS content -->
         <div id="fetched-content" class="hidden mt-8">
@@ -145,7 +141,6 @@
             const rssFieldsContainer = document.getElementById('rss-fields-container');
             const addRssFeedBtn = document.getElementById('add-rss-feed-btn');
             const saveDataBtn = document.getElementById('save-data-btn');
-            const form = document.getElementById('social-feed-form');
             const testConnectionBtn = document.getElementById('test-connection-btn');
             const fetchFeedsBtn = document.getElementById('fetch-feeds-btn');
             const messageBox = document.getElementById('message-box');
@@ -223,9 +218,6 @@
             let db, auth, userId;
             let isAuthReady = false;
 
-            // This is the crucial change. We now wait for the onAuthStateChanged listener to
-            // handle all messages about connection status. This is the most reliable method
-            // because it waits for the async authentication to complete.
             try {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
@@ -322,9 +314,11 @@
                         const data = docSnap.data();
                         
                         document.getElementById('mastodon-server').value = data.mastodonServer || '';
-                        document.getElementById('mastodon-access-token').value = data.mastodonAccessToken || '';
                         document.getElementById('bluesky-username').value = data.blueskyUsername || '';
-                        document.getElementById('bluesky-app-password').value = data.blueskyAppPassword || '';
+                        
+                        // CRITICAL SECURITY FIX: Do NOT load sensitive tokens/passwords back into the UI
+                        // document.getElementById('mastodon-access-token').value = '';
+                        // document.getElementById('bluesky-app-password').value = '';
 
                         rssFieldsContainer.innerHTML = '';
                         if (Array.isArray(data.rssUrls) && data.rssUrls.length > 0) {
@@ -423,12 +417,6 @@
                     return { error: `Could not fetch feed: ${error.message}` };
                 }
             }
-
-
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                showMessage('Form submitted. This is a placeholder. Functionality to be added.', 'success');
-            });
 
             testConnectionBtn.addEventListener('click', async () => {
                 setLoadingState(testConnectionBtn);
